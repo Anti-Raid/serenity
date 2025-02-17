@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use super::event_handler::{EventHandler, RawEventHandler};
+use super::event_handler::{EventHandler, RawEventHandler, UnknownEventData};
 use super::{Context, FullEvent};
 #[cfg(feature = "cache")]
 use crate::cache::{Cache, CacheUpdate};
@@ -475,6 +475,12 @@ fn update_cache_with_event(
         },
         Event::MessagePollVoteRemove(event) => FullEvent::MessagePollVoteRemove {
             event,
+        },
+        Event::Unknown((kind, value)) => FullEvent::Unknown {
+            event: UnknownEventData {
+                kind,
+                value,
+            },
         },
     };
 

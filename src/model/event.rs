@@ -16,7 +16,7 @@ use tracing::{debug, warn};
 use crate::constants::Opcode;
 use crate::internal::utils::lending_for_each;
 use crate::model::prelude::*;
-use crate::model::utils::{deserialize_val, remove_from_map};
+use crate::model::utils::remove_from_map;
 
 /// Requires no gateway intents.
 ///
@@ -1325,6 +1325,8 @@ pub enum Event {
     MessagePollVoteAdd(MessagePollVoteAddEvent),
     /// A user has removed a previous vote on a Message Poll.
     MessagePollVoteRemove(MessagePollVoteRemoveEvent),
+    /// An unknown event was received.
+    Unknown((String, JsonMap)),
 }
 
 impl Event {
@@ -1336,17 +1338,21 @@ impl Event {
 
     #[cfg(feature = "gateway")]
     pub(crate) fn deserialize_and_log(map: JsonMap, original_str: &str) -> Result<Self> {
-        deserialize_val(Value::Object(map)).map_err(|err| {
-            let err_dbg = format!("{err:?}");
-            if let Some((variant_name, _)) =
-                err_dbg.strip_prefix(r#"Error("unknown variant `"#).and_then(|s| s.split_once('`'))
-            {
-                debug!("Unknown event: {variant_name}");
-            } else {
-                warn!("Err deserializing text: {err_dbg}");
-            }
-            debug!("Failing text: {original_str}");
-            Error::Json(err)
-        })
+        match Event::deserialize(&map).map_err(serde::de::Error::custom) {
+            Ok(event) => Ok(event),
+            Err(err) => {
+                let err_dbg = format!("{err:?}");
+                if let Some((variant_name, _)) = err_dbg
+                    .strip_prefix(r#"Error("unknown variant `"#)
+                    .and_then(|s| s.split_once('`'))
+                {
+                    Ok(Event::Unknown((variant_name.to_string(), map)))
+                } else {
+                    warn!("Err deserializing text: {err_dbg}");
+                    debug!("Failing text: {original_str}");
+                    Err(Error::Json(err))
+                }
+            },
+        }
     }
 }

@@ -501,6 +501,15 @@ event_handler! {
 
     /// Dispatched when an HTTP rate limit is hit
     Ratelimit { data: RatelimitInfo } => async fn ratelimit(&self);
+
+    /// An unknown event was received.
+    Unknown { event: UnknownEventData } => async fn unknown(&self, ctx: Context);
+}
+
+#[derive(Clone, Debug, Serialize)]
+pub struct UnknownEventData {
+    pub kind: String,
+    pub value: JsonMap,
 }
 
 /// This core trait for handling raw events
