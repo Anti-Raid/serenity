@@ -7,6 +7,7 @@ use serde::Serialize;
 use serde::de::Error as DeError;
 use serde_json::value::RawValue;
 use strum::{EnumCount, IntoStaticStr, VariantNames};
+use tracing::error;
 
 use crate::constants::Opcode;
 use crate::model::prelude::*;
@@ -997,9 +998,12 @@ impl<'de> Deserialize<'de> for GatewayEvent {
                     seq: raw.seq.ok_or_else(|| DeError::missing_field("s"))?,
                     event: match Box::<Event>::deserialize(raw_data) {
                         Ok(event) => DeserializedEvent::Success(event),
-                        Err(_) => DeserializedEvent::Unknown(
-                            UnknownEvent::deserialize(raw_data).map_err(DeError::custom)?,
-                        ),
+                        Err(e) => {
+                            error!("Failed to deserialize event: {:?}", e);
+                            DeserializedEvent::Unknown(
+                                UnknownEvent::deserialize(raw_data).map_err(DeError::custom)?,
+                            )
+                        },
                     },
                 }
             },
