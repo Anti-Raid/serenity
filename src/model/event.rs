@@ -57,6 +57,17 @@ pub struct IEvent {
     #[serde(rename = "d")]
     #[cfg_attr(feature = "typesize", typesize(with = raw_value_len))]
     pub data: Box<RawValue>,
+    #[serde(rename = "__sandwich_edt")]
+    pub sandwich_edt: Option<SandwichEventDispatchIdentifier>,
+}
+
+#[cfg_attr(feature = "typesize", derive(typesize::derive::TypeSize))]
+#[derive(Clone, Debug, Deserialize, Serialize)]
+pub struct SandwichEventDispatchIdentifier {
+    #[serde[rename = "GuildID"]]
+    pub guild_id: Option<GuildId>,
+    #[serde(rename = "UserID")]
+    pub user_id: Option<UserId>,
 }
 
 #[cfg(feature = "typesize")]
@@ -76,6 +87,8 @@ impl<'de> Deserialize<'de> for GatewayEvent {
             data: Box<RawValue>,
             #[serde(rename = "t")]
             ty: Option<String>,
+            #[serde(rename = "__sandwich_edt")]
+            sandwich_edt: Option<SandwichEventDispatchIdentifier>,
         }
 
         let raw_data = <&RawValue>::deserialize(deserializer)?;
@@ -93,6 +106,7 @@ impl<'de> Deserialize<'de> for GatewayEvent {
                     event: Box::new(IEvent {
                         ty: raw.ty.ok_or_else(|| DeError::missing_field("t"))?.to_string(),
                         data: raw.data,
+                        sandwich_edt: raw.sandwich_edt,
                     }),
                 }
             },
