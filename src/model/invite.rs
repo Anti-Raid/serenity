@@ -3,10 +3,6 @@
 use nonmax::NonMaxU64;
 
 use super::prelude::*;
-#[cfg(feature = "model")]
-use crate::builder::CreateInvite;
-#[cfg(feature = "model")]
-use crate::http::Http;
 
 /// Information about an invite code.
 ///
@@ -61,64 +57,6 @@ pub struct Invite {
 
 #[cfg(feature = "model")]
 impl Invite {
-    /// Creates an invite for the given channel.
-    ///
-    /// **Note**: Requires the [Create Instant Invite] permission.
-    ///
-    /// # Errors
-    ///
-    /// Returns [`Error::Http`] if the current user lacks permission or if invalid data is given.
-    ///
-    /// [Create Instant Invite]: Permissions::CREATE_INSTANT_INVITE
-    pub async fn create(
-        http: &Http,
-        channel_id: ChannelId,
-        builder: CreateInvite<'_>,
-    ) -> Result<RichInvite> {
-        channel_id.create_invite(http, builder).await
-    }
-
-    /// Deletes the invite.
-    ///
-    /// **Note**: Requires the [Manage Guild] permission.
-    ///
-    /// # Errors
-    ///
-    /// Returns [`Error::Http`] if the current user lacks permission or if the invite is
-    /// invalid.
-    ///
-    /// [Manage Guild]: Permissions::MANAGE_GUILD
-    /// [permission]: super::permissions
-    pub async fn delete(&self, http: &Http, reason: Option<&str>) -> Result<Invite> {
-        http.delete_invite(&self.code, reason).await
-    }
-
-    /// Gets information about an invite.
-    ///
-    /// # Arguments
-    /// * `code` - The invite code.
-    /// * `member_counts` - Whether to include information about the current number of members in
-    ///   the server that the invite belongs to.
-    /// * `expiration` - Whether to include information about when the invite expires.
-    /// * `event_id` - An optional server event ID to include with the invite.
-    ///
-    /// More information about these arguments can be found on Discord's
-    /// [API documentation](https://discord.com/developers/docs/resources/invite#get-invite).
-    ///
-    /// # Errors
-    ///
-    /// May return an [`Error::Http`] if the invite is invalid. Can also return an [`Error::Json`]
-    /// if there is an error deserializing the API response.
-    pub async fn get(
-        http: &Http,
-        code: &str,
-        member_counts: bool,
-        expiration: bool,
-        event_id: Option<ScheduledEventId>,
-    ) -> Result<Invite> {
-        http.get_invite(code, member_counts, expiration, event_id).await
-    }
-
     /// Returns a URL to use for the invite.
     ///
     /// # Examples
@@ -239,22 +177,6 @@ pub struct RichInvite {
 
 #[cfg(feature = "model")]
 impl RichInvite {
-    /// Deletes the invite.
-    ///
-    /// Refer to [`Http::delete_invite`] for more information.
-    ///
-    /// **Note**: Requires the [Manage Guild] permission.
-    ///
-    /// # Errors
-    ///
-    /// Returns [`Error::Http`] if the current user lacks permission or if invalid data is given.
-    ///
-    /// [Manage Guild]: Permissions::MANAGE_GUILD
-    /// [permission]: super::permissions
-    pub async fn delete(&self, http: &Http, reason: Option<&str>) -> Result<Invite> {
-        http.delete_invite(&self.code, reason).await
-    }
-
     /// Returns a URL to use for the invite.
     ///
     /// # Examples

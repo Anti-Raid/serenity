@@ -1,6 +1,4 @@
 use super::*;
-#[cfg(feature = "model")]
-use crate::builder::{CreateMessage, EditThread};
 use crate::internal::prelude::*;
 use crate::model::utils::is_false;
 
@@ -12,79 +10,6 @@ impl ThreadId {
     #[must_use]
     pub fn widen(self) -> GenericChannelId {
         self.into()
-    }
-}
-
-#[cfg(feature = "model")]
-impl ThreadId {
-    /// Gets the thread members, if this channel is a thread.
-    ///
-    /// # Errors
-    ///
-    /// It may return an [`Error::Http`] if the channel is not a thread channel
-    pub async fn get_thread_members(self, http: &Http) -> Result<Vec<ThreadMember>> {
-        http.get_channel_thread_members(self).await
-    }
-
-    /// Joins the thread, if this channel is a thread.
-    ///
-    /// # Errors
-    ///
-    /// It may return an [`Error::Http`] if the channel is not a thread channel
-    pub async fn join_thread(self, http: &Http) -> Result<()> {
-        http.join_thread_channel(self).await
-    }
-
-    /// Edits the thread.
-    ///
-    /// # Errors
-    ///
-    /// Returns [`Error::Http`] if the current user lacks permission.
-    pub async fn edit(self, http: &Http, builder: EditThread<'_>) -> Result<GuildThread> {
-        builder.execute(http, self).await
-    }
-
-    /// Leaves the thread, if this channel is a thread.
-    ///
-    /// # Errors
-    ///
-    /// It may return an [`Error::Http`] if the channel is not a thread channel
-    pub async fn leave_thread(self, http: &Http) -> Result<()> {
-        http.leave_thread_channel(self).await
-    }
-
-    /// Adds a thread member, if this channel is a thread.
-    ///
-    /// # Errors
-    ///
-    /// It may return an [`Error::Http`] if the channel is not a thread channel
-    pub async fn add_thread_member(self, http: &Http, user_id: UserId) -> Result<()> {
-        http.add_thread_channel_member(self, user_id).await
-    }
-
-    /// Removes a thread member, if this channel is a thread.
-    ///
-    /// # Errors
-    ///
-    /// It may return an [`Error::Http`] if the channel is not a thread channel
-    pub async fn remove_thread_member(self, http: &Http, user_id: UserId) -> Result<()> {
-        http.remove_thread_channel_member(self, user_id).await
-    }
-
-    /// Gets a thread member, if this channel is a thread.
-    ///
-    /// `with_member` controls if ThreadMember::member should be `Some`
-    ///
-    /// # Errors
-    ///
-    /// It may return an [`Error::Http`] if the channel is not a thread channel
-    pub async fn get_thread_member(
-        self,
-        http: &Http,
-        user_id: UserId,
-        with_member: bool,
-    ) -> Result<ThreadMember> {
-        http.get_thread_channel_member(self, user_id, with_member).await
     }
 }
 
@@ -119,48 +44,6 @@ pub struct GuildThread {
     /// **Note**: This is only available in a thread in a forum.
     #[serde(default)]
     pub applied_tags: FixedArray<ForumTagId>,
-}
-
-#[cfg(feature = "model")]
-impl GuildThread {
-    /// Edits the thread.
-    ///
-    /// # Errors
-    ///
-    /// Returns [`Error::Http`] if the current user lacks permission.
-    pub async fn edit(&mut self, http: &Http, builder: EditThread<'_>) -> Result<()> {
-        *self = self.id.edit(http, builder).await?;
-        Ok(())
-    }
-
-    /// Deletes this thread, returning the thread on a successful deletion.
-    ///
-    /// **Note**: Requires the [Manage Threads] permission.
-    ///
-    /// # Errors
-    ///
-    /// Returns [`Error::Http`] if the current user lacks permission.
-    ///
-    /// [Manage Threads]: Permissions::MANAGE_THREADS
-    pub async fn delete(&self, http: &Http, reason: Option<&str>) -> Result<GuildThread> {
-        let channel = self.id.widen().delete(http, reason).await?;
-        channel.thread().ok_or(Error::Model(ModelError::InvalidChannelType))
-    }
-
-    /// Sends a message to the thread.
-    ///
-    /// Refer to the documentation for [`CreateMessage`] for information regarding content
-    /// restrictions and requirements.
-    ///
-    /// # Errors
-    ///
-    /// See [`CreateMessage::execute`] for a list of possible errors, and their corresponding
-    /// reasons.
-    pub async fn send_message(&self, http: &Http, builder: CreateMessage<'_>) -> Result<Message> {
-        let mut message = self.id.widen().send_message(http, builder).await?;
-        message.guild_id = Some(self.base.guild_id);
-        Ok(message)
-    }
 }
 
 impl ExtractKey<ThreadId> for GuildThread {

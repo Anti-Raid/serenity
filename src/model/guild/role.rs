@@ -1,10 +1,5 @@
 use std::cmp::Ordering;
 use std::fmt;
-
-#[cfg(feature = "model")]
-use crate::builder::EditRole;
-#[cfg(feature = "model")]
-use crate::http::Http;
 use crate::model::prelude::*;
 use crate::model::utils::is_false;
 
@@ -70,37 +65,6 @@ pub struct Role {
 
 #[cfg(feature = "model")]
 impl Role {
-    /// Deletes the role.
-    ///
-    /// **Note** Requires the [Manage Roles] permission.
-    ///
-    /// # Errors
-    ///
-    /// Returns [`Error::Http`] if the current user lacks permission to delete this role.
-    ///
-    /// [Manage Roles]: Permissions::MANAGE_ROLES
-    pub async fn delete(&mut self, http: &Http, reason: Option<&str>) -> Result<()> {
-        self.guild_id.delete_role(http, self.id, reason).await
-    }
-
-    /// Edits a [`Role`], optionally setting its new fields.
-    ///
-    /// Requires the [Manage Roles] permission.
-    ///
-    /// # Examples
-    ///
-    /// See the documentation of [`EditRole`] for details.
-    ///
-    /// # Errors
-    ///
-    /// Returns [`Error::Http`] if the current user does not have permission to Manage Roles.
-    ///
-    /// [Manage Roles]: Permissions::MANAGE_ROLES
-    pub async fn edit(&mut self, http: &Http, builder: EditRole<'_>) -> Result<()> {
-        *self = self.guild_id.edit_role(http, self.id, builder).await?;
-        Ok(())
-    }
-
     /// Check that the role has the given permission.
     #[must_use]
     pub fn has_permission(&self, permission: Permissions) -> bool {

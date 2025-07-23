@@ -31,7 +31,7 @@ use super::{
     MessagePagination,
     UserPagination,
 };
-use crate::builder::{CreateAllowedMentions, CreateAttachment};
+use crate::all::CreateAttachment;
 use crate::constants;
 use crate::internal::prelude::*;
 use crate::model::prelude::*;
@@ -85,7 +85,6 @@ pub struct HttpBuilder {
     token: Option<Token>,
     proxy: Option<FixedString<u16>>,
     application_id: Option<ApplicationId>,
-    default_allowed_mentions: Option<CreateAllowedMentions<'static>>,
 }
 
 impl HttpBuilder {
@@ -98,7 +97,6 @@ impl HttpBuilder {
             token: Some(token),
             proxy: None,
             application_id: None,
-            default_allowed_mentions: None,
         }
     }
 
@@ -114,7 +112,6 @@ impl HttpBuilder {
             token: None,
             proxy: None,
             application_id: None,
-            default_allowed_mentions: None,
         }
     }
 
@@ -178,18 +175,6 @@ impl HttpBuilder {
         self
     }
 
-    /// Sets the [`CreateAllowedMentions`] used by default for each request that would use it.
-    ///
-    /// This only takes effect if you are calling through the model or builder methods, not directly
-    /// calling [`Http`] methods, as [`Http`] is simply used as a convenient storage for these.
-    pub fn default_allowed_mentions(
-        mut self,
-        allowed_mentions: CreateAllowedMentions<'static>,
-    ) -> Self {
-        self.default_allowed_mentions = Some(allowed_mentions);
-        self
-    }
-
     /// Use the given configuration to build the `Http` client.
     #[must_use]
     pub fn build(self) -> Http {
@@ -211,7 +196,6 @@ impl HttpBuilder {
             proxy: self.proxy,
             token: self.token,
             application_id,
-            default_allowed_mentions: self.default_allowed_mentions,
         }
     }
 }
@@ -242,7 +226,6 @@ pub struct Http {
     pub proxy: Option<FixedString<u16>>,
     token: Option<Token>,
     application_id: AtomicU64,
-    pub default_allowed_mentions: Option<CreateAllowedMentions<'static>>,
 }
 
 impl Http {

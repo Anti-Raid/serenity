@@ -3,7 +3,7 @@ use std::borrow::Cow;
 use reqwest::multipart::{Form, Part};
 use tokio::fs::File;
 
-use crate::builder::{AttachmentData, CreateAttachment};
+use crate::attachments::{AttachmentData, CreateAttachment};
 use crate::internal::prelude::*;
 
 impl CreateAttachment<'_> {

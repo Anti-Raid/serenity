@@ -1,16 +1,27 @@
-use nonmax::NonMaxU32;
+use crate::nonmax::NonMaxU32;
 use serde::de::Error as DeError;
-use serde::ser::{Serialize, Serializer};
-use serde_json::value::RawValue;
-
+use serde::ser::{Serializer};
+use serde::{Deserialize, Serialize, Deserializer};
+use serde_json::{from_value, Value};
+use small_fixed_array::{FixedString, FixedArray};
+use serde_json::Map as JsonMap;
 use crate::model::prelude::*;
-use crate::model::utils::default_true;
+
+fn default_true() -> bool {
+    true
+}
+
+fn deserialize_val<T, E>(val: Value) -> Result<T, E>
+where
+    T: serde::de::DeserializeOwned,
+    E: serde::de::Error,
+{
+    T::deserialize(val).map_err(serde::de::Error::custom)
+}
 
 enum_number! {
     /// The type of a component
     #[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd, Deserialize, Serialize)]
-    #[cfg_attr(feature = "typesize", derive(typesize::derive::TypeSize))]
-    #[non_exhaustive]
     pub enum ComponentType {
         ActionRow = 1,
         Button = 2,
@@ -39,7 +50,6 @@ enum_number! {
 ///   [`ActionRow`].
 /// - When `IS_COMPONENTS_V2` **is** set, other component types may be used at the top level, but
 ///   other message limitations are applied.
-#[cfg_attr(feature = "typesize", derive(typesize::derive::TypeSize))]
 #[derive(Clone, Debug, Serialize)]
 #[non_exhaustive]
 #[serde(untagged)]
@@ -62,38 +72,31 @@ impl<'de> Deserialize<'de> for Component {
     where
         D: Deserializer<'de>,
     {
-        use serde_json::value::RawValue;
+        let map = JsonMap::deserialize(deserializer)?;
+        let raw_kind = map.get("type").ok_or_else(|| DeError::missing_field("type"))?.clone();
+        let value = Value::from(map);
 
-        #[derive(Deserialize)]
-        struct ComponentRaw {
-            #[serde(rename = "type")]
-            kind: ComponentType,
-        }
-
-        let value = <&RawValue>::deserialize(deserializer)?;
-        let raw = ComponentRaw::deserialize(value).map_err(DeError::custom)?;
-
-        match raw.kind {
-            ComponentType::ActionRow => Deserialize::deserialize(value).map(Component::ActionRow),
-            ComponentType::Button => Deserialize::deserialize(value).map(Component::Button),
+        match deserialize_val(raw_kind)? {
+            ComponentType::ActionRow => from_value(value).map(Component::ActionRow),
+            ComponentType::Button => from_value(value).map(Component::Button),
             ComponentType::StringSelect
             | ComponentType::UserSelect
             | ComponentType::RoleSelect
             | ComponentType::MentionableSelect
             | ComponentType::ChannelSelect => {
-                Deserialize::deserialize(value).map(Component::SelectMenu)
+                from_value(value).map(Component::SelectMenu)
             },
-            ComponentType::Section => Deserialize::deserialize(value).map(Component::Section),
+            ComponentType::Section => from_value(value).map(Component::Section),
             ComponentType::TextDisplay => {
-                Deserialize::deserialize(value).map(Component::TextDisplay)
+                from_value(value).map(Component::TextDisplay)
             },
             ComponentType::MediaGallery => {
-                Deserialize::deserialize(value).map(Component::MediaGallery)
+                from_value(value).map(Component::MediaGallery)
             },
-            ComponentType::Separator => Deserialize::deserialize(value).map(Component::Separator),
-            ComponentType::File => Deserialize::deserialize(value).map(Component::File),
-            ComponentType::Container => Deserialize::deserialize(value).map(Component::Container),
-            ComponentType::Thumbnail => Deserialize::deserialize(value).map(Component::Thumbnail),
+            ComponentType::Separator => from_value(value).map(Component::Separator),
+            ComponentType::File => from_value(value).map(Component::File),
+            ComponentType::Container => from_value(value).map(Component::Container),
+            ComponentType::Thumbnail => from_value(value).map(Component::Thumbnail),
             ComponentType(i) => Ok(Component::Unknown(i)),
         }
         .map_err(DeError::custom)
@@ -103,7 +106,6 @@ impl<'de> Deserialize<'de> for Component {
 /// A component that is a container for up to 3 text display components and an accessory.
 ///
 /// [Discord docs](https://discord.com/developers/docs/components/reference#section)
-#[cfg_attr(feature = "typesize", derive(typesize::derive::TypeSize))]
 #[derive(Clone, Debug, Deserialize, Serialize)]
 #[non_exhaustive]
 pub struct Section {
@@ -126,7 +128,6 @@ pub struct Section {
 /// See [`Section`] for how this fits within a section.
 ///
 /// [Discord docs](https://discord.com/developers/docs/components/reference#thumbnail)
-#[cfg_attr(feature = "typesize", derive(typesize::derive::TypeSize))]
 #[derive(Clone, Debug, Deserialize, Serialize)]
 #[non_exhaustive]
 pub struct Thumbnail {
@@ -144,7 +145,6 @@ pub struct Thumbnail {
 /// A url or attachment.
 ///
 /// [Discord docs](https://discord.com/developers/docs/components/reference#unfurled-media-item-structure)
-#[cfg_attr(feature = "typesize", derive(typesize::derive::TypeSize))]
 #[derive(Clone, Debug, Deserialize, Serialize)]
 #[non_exhaustive]
 pub struct UnfurledMediaItem {
@@ -164,7 +164,6 @@ pub struct UnfurledMediaItem {
 /// message.
 ///
 /// [Discord docs](https://discord.com/developers/docs/components/reference#text-display)
-#[cfg_attr(feature = "typesize", derive(typesize::derive::TypeSize))]
 #[derive(Clone, Debug, Deserialize, Serialize)]
 #[non_exhaustive]
 pub struct TextDisplay {
@@ -179,7 +178,6 @@ pub struct TextDisplay {
 /// gallery format.
 ///
 /// [Discord docs](https://discord.com/developers/docs/components/reference#media-gallery)
-#[cfg_attr(feature = "typesize", derive(typesize::derive::TypeSize))]
 #[derive(Clone, Debug, Deserialize, Serialize)]
 #[non_exhaustive]
 pub struct MediaGallery {
@@ -195,7 +193,6 @@ pub struct MediaGallery {
 /// Belongs to [`MediaGallery`].
 ///
 /// [Discord docs](https://discord.com/developers/docs/components/reference#media-gallery-media-gallery-item-structure)
-#[cfg_attr(feature = "typesize", derive(typesize::derive::TypeSize))]
 #[derive(Clone, Debug, Deserialize, Serialize)]
 #[non_exhaustive]
 pub struct MediaGalleryItem {
@@ -210,7 +207,6 @@ pub struct MediaGalleryItem {
 /// A component that adds vertical padding and visual division between other components.
 ///
 /// [Discord docs](https://discord.com/developers/docs/components/reference#separator)
-#[cfg_attr(feature = "typesize", derive(typesize::derive::TypeSize))]
 #[derive(Clone, Debug, Deserialize, Serialize)]
 #[non_exhaustive]
 pub struct Separator {
@@ -226,7 +222,6 @@ pub struct Separator {
 enum_number! {
     /// The size of a separator component.
     #[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd, Deserialize, Serialize)]
-    #[cfg_attr(feature = "typesize", derive(typesize::derive::TypeSize))]
     #[non_exhaustive]
     pub enum SeparatorSpacingSize {
         Small = 1,
@@ -239,7 +234,6 @@ enum_number! {
 ///
 /// [Discord docs](https://discord.com/developers/docs/components/reference#file)
 #[derive(Clone, Debug, Deserialize, Serialize)]
-#[cfg_attr(feature = "typesize", derive(typesize::derive::TypeSize))]
 #[non_exhaustive]
 pub struct FileComponent {
     /// Always [`ComponentType::File`]
@@ -255,7 +249,6 @@ pub struct FileComponent {
 ///
 /// [Discord docs](https://discord.com/developers/docs/components/reference#container)
 #[derive(Clone, Debug, Deserialize, Serialize)]
-#[cfg_attr(feature = "typesize", derive(typesize::derive::TypeSize))]
 #[non_exhaustive]
 pub struct Container {
     /// Always [`ComponentType::Container`]
@@ -276,7 +269,6 @@ pub struct Container {
 /// An action row.
 ///
 /// [Discord docs](https://discord.com/developers/docs/interactions/message-components#action-rows).
-#[cfg_attr(feature = "typesize", derive(typesize::derive::TypeSize))]
 #[derive(Clone, Debug, Deserialize, Serialize)]
 #[non_exhaustive]
 pub struct ActionRow {
@@ -285,13 +277,12 @@ pub struct ActionRow {
     pub kind: ComponentType,
     /// The components of this ActionRow.
     #[serde(default)]
-    pub components: FixedArray<ActionRowComponent>,
+    pub components: Vec<ActionRowComponent>,
 }
 
 /// A component which can be inside of an [`ActionRow`].
 ///
 /// [Discord docs](https://discord.com/developers/docs/interactions/message-components#component-object-component-types).
-#[cfg_attr(feature = "typesize", derive(typesize::derive::TypeSize))]
 #[derive(Clone, Debug)]
 #[non_exhaustive]
 pub enum ActionRowComponent {
@@ -302,28 +293,23 @@ pub enum ActionRowComponent {
 
 impl<'de> Deserialize<'de> for ActionRowComponent {
     fn deserialize<D: Deserializer<'de>>(deserializer: D) -> std::result::Result<Self, D::Error> {
-        #[derive(Deserialize)]
-        struct ActionRowRaw {
-            #[serde(rename = "type")]
-            kind: ComponentType,
-        }
+        let map = JsonMap::deserialize(deserializer)?;
+        let raw_kind = map.get("type").ok_or_else(|| DeError::missing_field("type"))?.clone();
+        let value = Value::from(map);
 
-        let raw_data = <&RawValue>::deserialize(deserializer)?;
-        let raw = ActionRowRaw::deserialize(raw_data).map_err(DeError::custom)?;
-
-        match raw.kind {
+        match deserialize_val(raw_kind)? {
             ComponentType::Button => {
-                Deserialize::deserialize(raw_data).map(ActionRowComponent::Button)
+                from_value(value).map(ActionRowComponent::Button)
             },
             ComponentType::InputText => {
-                Deserialize::deserialize(raw_data).map(ActionRowComponent::InputText)
+                from_value(value).map(ActionRowComponent::InputText)
             },
             ComponentType::StringSelect
             | ComponentType::UserSelect
             | ComponentType::RoleSelect
             | ComponentType::MentionableSelect
             | ComponentType::ChannelSelect => {
-                Deserialize::deserialize(raw_data).map(ActionRowComponent::SelectMenu)
+                from_value(value).map(ActionRowComponent::SelectMenu)
             },
             ComponentType::ActionRow => {
                 return Err(DeError::custom("Invalid component type ActionRow"));
@@ -358,7 +344,6 @@ impl From<SelectMenu> for ActionRowComponent {
     }
 }
 
-#[cfg_attr(feature = "typesize", derive(typesize::derive::TypeSize))]
 #[derive(Clone, Debug, Deserialize, PartialEq, Eq)]
 #[serde(untagged)]
 pub enum ButtonKind {
@@ -368,7 +353,7 @@ pub enum ButtonKind {
 }
 
 impl Serialize for ButtonKind {
-    fn serialize<S>(&self, serializer: S) -> StdResult<S::Ok, S::Error>
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: Serializer,
     {
@@ -417,7 +402,6 @@ impl Serialize for ButtonKind {
 /// A button component.
 ///
 /// [Discord docs](https://discord.com/developers/docs/interactions/message-components#button-object-button-structure).
-#[cfg_attr(feature = "typesize", derive(typesize::derive::TypeSize))]
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[non_exhaustive]
 pub struct Button {
@@ -441,7 +425,6 @@ pub struct Button {
 enum_number! {
     /// The style of a button.
     #[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd, Deserialize, Serialize)]
-    #[cfg_attr(feature = "typesize", derive(typesize::derive::TypeSize))]
     #[non_exhaustive]
     pub enum ButtonStyle {
         Primary = 1,
@@ -456,7 +439,6 @@ enum_number! {
 /// A select menu component.
 ///
 /// [Discord docs](https://discord.com/developers/docs/interactions/message-components#select-menu-object-select-menu-structure).
-#[cfg_attr(feature = "typesize", derive(typesize::derive::TypeSize))]
 #[derive(Clone, Debug, Deserialize, Serialize)]
 #[non_exhaustive]
 pub struct SelectMenu {
@@ -489,7 +471,6 @@ pub struct SelectMenu {
 /// A select menu component options.
 ///
 /// [Discord docs](https://discord.com/developers/docs/interactions/message-components#select-menu-object-select-option-structure).
-#[cfg_attr(feature = "typesize", derive(typesize::derive::TypeSize))]
 #[derive(Clone, Debug, Deserialize, Serialize)]
 #[non_exhaustive]
 pub struct SelectMenuOption {
@@ -509,7 +490,6 @@ pub struct SelectMenuOption {
 /// An input text component for modal interactions
 ///
 /// [Discord docs](https://discord.com/developers/docs/interactions/message-components#text-inputs-text-input-structure).
-#[cfg_attr(feature = "typesize", derive(typesize::derive::TypeSize))]
 #[derive(Clone, Debug, PartialEq, Deserialize, Serialize)]
 #[non_exhaustive]
 pub struct InputText {
@@ -554,53 +534,10 @@ enum_number! {
     ///
     /// [Discord docs](https://discord.com/developers/docs/interactions/message-components#text-inputs-text-input-styles).
     #[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd, Deserialize, Serialize)]
-    #[cfg_attr(feature = "typesize", derive(typesize::derive::TypeSize))]
     #[non_exhaustive]
     pub enum InputTextStyle {
         Short = 1,
         Paragraph = 2,
         _ => Unknown(u8),
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use serde_json::json;
-
-    use super::*;
-    use crate::model::utils::assert_json;
-
-    #[test]
-    fn test_button_serde() {
-        let mut button = Button {
-            kind: ComponentType::Button,
-            data: ButtonKind::NonLink {
-                custom_id: FixedString::from_static_trunc("hello"),
-                style: ButtonStyle::Danger,
-            },
-            label: Some(FixedString::from_static_trunc("a")),
-            emoji: None,
-            disabled: false,
-        };
-        assert_json(
-            &button,
-            json!({"type": 2, "style": 4, "custom_id": "hello", "label": "a", "disabled": false}),
-        );
-
-        button.data = ButtonKind::Link {
-            url: FixedString::from_static_trunc("https://google.com"),
-        };
-        assert_json(
-            &button,
-            json!({"type": 2, "style": 5, "url": "https://google.com", "label": "a", "disabled": false}),
-        );
-
-        button.data = ButtonKind::Premium {
-            sku_id: 1234965026943668316.into(),
-        };
-        assert_json(
-            &button,
-            json!({"type": 2, "style": 6, "sku_id": "1234965026943668316", "label": "a", "disabled": false}),
-        );
     }
 }

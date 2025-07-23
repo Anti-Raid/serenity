@@ -84,12 +84,11 @@ extern crate serde;
 #[macro_use]
 mod internal;
 
+pub mod attachments;
+
 pub mod constants;
 pub mod model;
 pub mod prelude;
-
-#[cfg(feature = "builder")]
-pub mod builder;
 #[cfg(feature = "gateway")]
 pub mod gateway;
 #[cfg(feature = "http")]
@@ -110,11 +109,9 @@ pub use crate::gateway::client::Client;
 ///
 /// Useful, because you don't have to remember the full paths of serenity items.
 pub mod all {
-    #[cfg(feature = "builder")]
-    #[doc(no_inline)]
-    pub use crate::builder::*;
     #[doc(no_inline)]
     pub use crate::constants::*;
+    pub use attachments::CreateAttachment;
     #[cfg(feature = "gateway")]
     #[doc(no_inline)]
     pub use crate::gateway::{client::*, *};

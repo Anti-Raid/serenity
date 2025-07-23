@@ -10,10 +10,6 @@ use serde::{Deserialize, Serialize};
 
 use super::prelude::*;
 #[cfg(feature = "model")]
-use crate::builder::EditProfile;
-#[cfg(feature = "model")]
-use crate::http::{CacheHttp, Http};
-#[cfg(feature = "model")]
 use crate::model::utils::avatar_url;
 
 /// Used with `#[serde(with|deserialize_with|serialize_with)]`
@@ -138,43 +134,6 @@ impl DerefMut for CurrentUser {
 impl From<CurrentUser> for User {
     fn from(user: CurrentUser) -> Self {
         user.0
-    }
-}
-
-#[cfg(feature = "model")]
-impl CurrentUser {
-    /// Edits the current user's profile settings.
-    ///
-    /// This mutates the current user in-place.
-    ///
-    /// Refer to [`EditProfile`]'s documentation for its methods.
-    ///
-    /// # Examples
-    ///
-    /// Change the avatar:
-    ///
-    /// ```rust,no_run
-    /// # use serenity::builder::{EditProfile, CreateAttachment};
-    /// # use serenity::http::Http;
-    /// # use serenity::model::user::CurrentUser;
-    /// #
-    /// # async fn run() -> Result<(), Box<dyn std::error::Error>> {
-    /// # let http: Http = unimplemented!();
-    /// # let mut user = CurrentUser::default();
-    /// let avatar = CreateAttachment::path("./avatar.png".as_ref())?.encode().await?;
-    /// let builder = EditProfile::new().avatar(avatar);
-    /// user.edit(&http, builder).await;
-    /// # Ok(())
-    /// # }
-    /// ```
-    ///
-    /// # Errors
-    ///
-    /// Returns an [`Error::Http`] if an invalid value is set. May also return an [`Error::Json`]
-    /// if there is an error in deserializing the API response.
-    pub async fn edit(&mut self, http: &Http, builder: EditProfile<'_>) -> Result<()> {
-        *self = builder.execute(http).await?;
-        Ok(())
     }
 }
 
@@ -411,19 +370,6 @@ impl User {
         self.static_avatar_url().unwrap_or_else(|| self.default_avatar_url())
     }
 
-    /// Refreshes the information about the user.
-    ///
-    /// Replaces the instance with the data retrieved over the REST API.
-    ///
-    /// # Errors
-    ///
-    /// See [`UserId::to_user`] for what errors may be returned.
-    pub async fn refresh(&mut self, cache_http: impl CacheHttp) -> Result<()> {
-        *self = self.id.to_user(cache_http).await?;
-
-        Ok(())
-    }
-
     /// Returns a static formatted URL of the user's icon, if one exists.
     ///
     /// This will always produce a WEBP image URL.
@@ -467,43 +413,6 @@ impl fmt::Display for User {
     // This is in the format of: `<@USER_ID>`
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         fmt::Display::fmt(&self.id.mention(), f)
-    }
-}
-
-#[cfg(feature = "model")]
-impl UserId {
-    /// First attempts to find a [`User`] by its Id in the `temp_cache` if enabled,
-    /// upon failure requests it via the REST API.
-    ///
-    /// # Errors
-    ///
-    /// May return an [`Error::Http`] if a [`User`] with that [`UserId`] does not exist, or
-    /// otherwise cannot be fetched.
-    ///
-    /// May also return an [`Error::Json`] if there is an error in deserializing the user.
-    pub async fn to_user(self, cache_http: impl CacheHttp) -> Result<User> {
-        #[cfg(feature = "temp_cache")]
-        {
-            if let Some(cache) = cache_http.cache() {
-                if let Some(user) = cache.temp_users.get(&self) {
-                    return Ok(User::clone(&user));
-                }
-            }
-        }
-
-        let user = cache_http.http().get_user(self).await?;
-
-        #[cfg(feature = "temp_cache")]
-        {
-            if let Some(cache) = cache_http.cache() {
-                use crate::cache::MaybeOwnedArc;
-
-                let cached_user = MaybeOwnedArc::new(user.clone());
-                cache.temp_users.insert(cached_user.id, cached_user);
-            }
-        }
-
-        Ok(user)
     }
 }
 

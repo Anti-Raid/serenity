@@ -1,20 +1,12 @@
 use std::cmp::Ordering;
-#[cfg(doc)]
-use std::fmt::Display as _;
 use std::fmt::{self, Write as _};
 use std::str::FromStr;
 
-#[cfg(feature = "model")]
-use nonmax::NonMaxU8;
 #[cfg(feature = "http")]
 use percent_encoding::{NON_ALPHANUMERIC, utf8_percent_encode};
 use serde::de::Error as DeError;
 use serde::ser::{Serialize, SerializeMap, Serializer};
 #[cfg(feature = "model")]
-use tracing::warn;
-
-#[cfg(feature = "model")]
-use crate::http::Http;
 use crate::model::prelude::*;
 use crate::model::utils::discord_colours_opt;
 
@@ -85,87 +77,6 @@ impl<'de> Deserialize<'de> for Reaction {
 impl Serialize for Reaction {
     fn serialize<S: serde::Serializer>(&self, serializer: S) -> StdResult<S::Ok, S::Error> {
         Self::serialize(self, serializer) // calls #[serde(remote)]-generated inherent method
-    }
-}
-
-#[cfg(feature = "model")]
-impl Reaction {
-    /// Deletes the reaction, but only if the current user is the user who made the reaction or has
-    /// permission to.
-    ///
-    /// Requires the [Manage Messages] permission, _if_ the current user did not perform the
-    /// reaction.
-    ///
-    /// # Errors
-    ///
-    /// Returns [`Error::Http`] if the current user lacks the required [permissions].
-    ///
-    /// [Manage Messages]: Permissions::MANAGE_MESSAGES
-    /// [permissions]: crate::model::permissions
-    pub async fn delete(&self, http: &Http) -> Result<()> {
-        self.channel_id
-            .delete_reaction(http, self.message_id, self.user_id, self.emoji.clone())
-            .await
-    }
-
-    /// Deletes all reactions from the message with this emoji.
-    ///
-    /// Requires the [Manage Messages] permission
-    ///
-    /// # Errors
-    ///
-    /// Returns [`Error::Http`] if the current user lacks [permissions].
-    ///
-    /// [Manage Messages]: Permissions::MANAGE_MESSAGES
-    /// [permissions]: crate::model::permissions
-    pub async fn delete_all(&self, http: &Http) -> Result<()> {
-        http.delete_message_reaction_emoji(self.channel_id, self.message_id, &self.emoji).await
-    }
-
-    /// Retrieves the list of [`User`]s who have reacted to a [`Message`] with a certain [`Emoji`].
-    ///
-    /// The default `limit` is `50` - specify otherwise to receive a different maximum number of
-    /// users. The maximum that may be retrieve at a time is `100`, if a greater number is provided
-    /// then it is automatically reduced.
-    ///
-    /// The optional `after` attribute is to retrieve the users after a certain user. This is
-    /// useful for pagination.
-    ///
-    /// Requires the [Read Message History] permission.
-    ///
-    /// **Note**: This will send a request to the REST API.
-    ///
-    /// # Errors
-    ///
-    /// Returns [`Error::Http`] if the current user lacks the required [permissions].
-    ///
-    /// [Read Message History]: Permissions::READ_MESSAGE_HISTORY
-    /// [permissions]: crate::model::permissions
-    pub async fn users(
-        &self,
-        http: &Http,
-        reaction_type: impl Into<ReactionType>,
-        limit: Option<NonMaxU8>,
-        after: Option<UserId>,
-    ) -> Result<Vec<User>> {
-        self.users_(http, &reaction_type.into(), limit, after).await
-    }
-
-    async fn users_(
-        &self,
-        http: &Http,
-        reaction_type: &ReactionType,
-        limit: Option<NonMaxU8>,
-        after: Option<UserId>,
-    ) -> Result<Vec<User>> {
-        let mut limit = limit.map_or(50, |limit| limit.get());
-
-        if limit > 100 {
-            limit = 100;
-            warn!("Reaction users limit clamped to 100! (API Restriction)");
-        }
-
-        http.get_reaction_users(self.channel_id, self.message_id, reaction_type, limit, after).await
     }
 }
 

@@ -4,7 +4,6 @@ use serde::Serialize;
 
 use super::{InstallationContext, InteractionContext};
 #[cfg(feature = "model")]
-use crate::builder::{CreateCommand, EditCommand};
 #[cfg(feature = "model")]
 use crate::http::Http;
 use crate::model::prelude::*;
@@ -89,90 +88,6 @@ pub struct Command {
 
 #[cfg(feature = "model")]
 impl Command {
-    /// Create a global [`Command`], overriding an existing one with the same name if it exists.
-    ///
-    /// When a created [`Command`] is used, the [`InteractionCreate`] event will be emitted.
-    ///
-    /// **Note**: Global commands may take up to an hour to be updated in the user slash commands
-    /// list. If an outdated command data is sent by a user, discord will consider it as an error
-    /// and then will instantly update that command.
-    ///
-    /// As such, it is recommended that guild application commands be used for testing purposes.
-    ///
-    /// # Examples
-    ///
-    /// Create a simple ping command:
-    ///
-    /// ```rust,no_run
-    /// # use serenity::http::Http;
-    /// # use std::sync::Arc;
-    /// #
-    /// # async fn run() {
-    /// # let http: Arc<Http> = unimplemented!();
-    /// use serenity::builder::CreateCommand;
-    /// use serenity::model::application::Command;
-    /// use serenity::model::id::ApplicationId;
-    ///
-    /// let builder = CreateCommand::new("ping").description("A simple ping command");
-    /// let _ = Command::create_global_command(&http, builder).await;
-    /// # }
-    /// ```
-    ///
-    /// Create a command that echoes what is inserted:
-    ///
-    /// ```rust,no_run
-    /// # use serenity::http::Http;
-    /// # use std::sync::Arc;
-    /// #
-    /// # async fn run() {
-    /// # let http: Arc<Http> = unimplemented!();
-    /// use serenity::builder::{CreateCommand, CreateCommandOption as CreateOption};
-    /// use serenity::model::application::{Command, CommandOptionType};
-    /// use serenity::model::id::ApplicationId;
-    ///
-    /// let builder =
-    ///     CreateCommand::new("echo").description("Makes the bot send a message").add_option(
-    ///         CreateOption::new(CommandOptionType::String, "message", "The message to send")
-    ///             .required(true),
-    ///     );
-    /// let _ = Command::create_global_command(&http, builder).await;
-    /// # }
-    /// ```
-    ///
-    /// # Errors
-    ///
-    /// See [`CreateCommand::execute`] for a list of possible errors.
-    ///
-    /// [`InteractionCreate`]: crate::gateway::client::FullEvent::InteractionCreate
-    pub async fn create_global_command(http: &Http, builder: CreateCommand<'_>) -> Result<Command> {
-        builder.execute(http, None).await
-    }
-
-    /// Override all global application commands.
-    ///
-    /// # Errors
-    ///
-    /// Returns the same errors as [`Self::create_global_command`].
-    pub async fn set_global_commands(
-        http: &Http,
-        commands: &[CreateCommand<'_>],
-    ) -> Result<Vec<Command>> {
-        http.create_global_commands(&commands).await
-    }
-
-    /// Edit a global command, given its Id.
-    ///
-    /// # Errors
-    ///
-    /// See [`CreateCommand::execute`] for a list of possible errors.
-    pub async fn edit_global_command(
-        http: &Http,
-        command_id: CommandId,
-        builder: EditCommand<'_>,
-    ) -> Result<Command> {
-        builder.execute(http, command_id, None).await
-    }
-
     /// Gets all global commands.
     ///
     /// # Errors

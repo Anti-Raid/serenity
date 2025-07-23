@@ -1,10 +1,6 @@
 use nonmax::NonMaxU64;
 use serde::Serialize;
 
-#[cfg(feature = "model")]
-use crate::builder::EditGuild;
-#[cfg(feature = "model")]
-use crate::http::Http;
 use crate::model::prelude::*;
 #[cfg(feature = "model")]
 use crate::model::utils::icon_url;
@@ -158,20 +154,6 @@ pub struct PartialGuild {
 
 #[cfg(feature = "model")]
 impl PartialGuild {
-    /// Edits the current guild with new data where specified.
-    ///
-    /// **Note**: Requires the [Manage Guild] permission.
-    ///
-    /// # Errors
-    ///
-    /// Returns [`Error::Http`] if the current user lacks permission or if invalid data is given.
-    ///
-    /// [Manage Guild]: Permissions::MANAGE_GUILD
-    pub async fn edit(&mut self, http: &Http, builder: EditGuild<'_>) -> Result<()> {
-        *self = self.id.edit(http, builder).await?;
-        Ok(())
-    }
-
     /// Calculate a [`Member`]'s permissions in the guild.
     ///
     /// You likely want to use PartialGuild::user_permissions_in instead as this function does not

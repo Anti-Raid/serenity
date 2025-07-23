@@ -14,9 +14,6 @@ mod scheduled_event;
 mod system_channel;
 mod welcome_screen;
 
-#[cfg(feature = "model")]
-use std::borrow::Cow;
-
 use nonmax::NonMaxU64;
 #[cfg(feature = "model")]
 use tracing::{error, warn};
@@ -32,12 +29,6 @@ pub use self::role::*;
 pub use self::scheduled_event::*;
 pub use self::system_channel::*;
 pub use self::welcome_screen::*;
-#[cfg(feature = "model")]
-use crate::builder::EditGuild;
-#[cfg(doc)]
-use crate::constants::LARGE_THRESHOLD;
-#[cfg(feature = "model")]
-use crate::http::Http;
 use crate::model::prelude::*;
 #[cfg(feature = "model")]
 use crate::model::utils::*;
@@ -306,99 +297,6 @@ impl Guild {
         self.banner.as_ref().map(|banner| cdn!("/banners/{}/{}.webp?size=1024", self.id, banner))
     }
 
-    /// Creates a guild with the data provided.
-    ///
-    /// Only a [`PartialGuild`] will be immediately returned, and a full [`Guild`] will be received
-    /// over a [`Shard`].
-    ///
-    /// **Note**: This endpoint is usually only available for user accounts. Refer to Discord's
-    /// information for the endpoint [here][whitelist] for more information. If you require this as
-    /// a bot, re-think what you are doing and if it _really_ needs to be doing this.
-    ///
-    /// # Examples
-    ///
-    /// Create a guild called `"test"` in the [US West region] with no icon:
-    ///
-    /// ```rust,no_run
-    /// # use serenity::http::Http;
-    /// use serenity::model::guild::Guild;
-    /// # async fn run() -> Result<(), Box<dyn std::error::Error>> {
-    /// # let http: Http = unimplemented!();
-    /// let guild = Guild::create(&http, "test", None).await;
-    /// # Ok(())
-    /// # }
-    /// ```
-    ///
-    /// # Errors
-    ///
-    /// Returns [`Error::Http`] if the current user cannot create a Guild.
-    ///
-    /// [`Shard`]: crate::gateway::Shard
-    /// [whitelist]: https://discord.com/developers/docs/resources/guild#create-guild
-    #[deprecated = "This endpoint has been deprecated by Discord and will stop functioning after July 15, 2025. For more information, see: https://discord.com/developers/docs/change-log#deprecating-guild-creation-by-apps"]
-    pub async fn create(http: &Http, name: &str, icon: Option<ImageHash>) -> Result<PartialGuild> {
-        #[derive(serde::Serialize)]
-        struct CreateGuild<'a> {
-            name: &'a str,
-            icon: Option<ImageHash>,
-        }
-
-        let body = CreateGuild {
-            name,
-            icon,
-        };
-
-        #[expect(deprecated)]
-        http.create_guild(&body).await
-    }
-
-    /// Edits the current guild with new data where specified.
-    ///
-    /// **Note**: Requires the [Manage Guild] permission.
-    ///
-    /// # Examples
-    ///
-    /// Change a guild's icon using a file named "icon.png":
-    ///
-    /// ```rust,no_run
-    /// # use serenity::builder::{EditGuild, CreateAttachment};
-    /// # use serenity::{http::Http, model::guild::Guild};
-    /// #
-    /// # async fn run() -> Result<(), Box<dyn std::error::Error>> {
-    /// # let http: Http = unimplemented!();
-    /// # let mut guild: Guild = unimplemented!();
-    /// let icon = CreateAttachment::path("./icon.png".as_ref())?.encode().await?;
-    ///
-    /// // assuming a `guild` has already been bound
-    /// let builder = EditGuild::new().icon(Some(icon));
-    /// guild.edit(&http, builder).await?;
-    /// # Ok(())
-    /// # }
-    /// ```
-    ///
-    /// # Errors
-    ///
-    /// Returns [`Error::Http`] if the current user lacks permission or if invalid data is given.
-    ///
-    /// [Manage Guild]: Permissions::MANAGE_GUILD
-    pub async fn edit(&mut self, http: &Http, builder: EditGuild<'_>) -> Result<()> {
-        let guild = self.id.edit(http, builder).await?;
-
-        self.afk_metadata = guild.afk_metadata;
-        self.default_message_notifications = guild.default_message_notifications;
-        self.emojis = guild.emojis;
-        self.features = guild.features;
-        self.icon = guild.icon;
-        self.mfa_level = guild.mfa_level;
-        self.name = guild.name;
-        self.owner_id = guild.owner_id;
-        self.roles = guild.roles;
-        self.splash = guild.splash;
-        self.verification_level = guild.verification_level;
-
-        Ok(())
-    }
-
     /// Gets the highest role a [`Member`] of this Guild has.
     ///
     /// Returns None if the member has no roles or the member from this guild.
@@ -518,23 +416,6 @@ impl Guild {
     #[must_use]
     pub fn icon_url(&self) -> Option<String> {
         icon_url(self.id, self.icon.as_ref())
-    }
-
-    /// Gets a user's [`Member`] for the guild by Id.
-    ///
-    /// If the cache feature is enabled [`Self::members`] will be checked first, if so, a reference
-    /// to the member will be returned.
-    ///
-    /// # Errors
-    ///
-    /// Returns an [`Error::Http`] if the user is not in the guild or if the guild is otherwise
-    /// unavailable.
-    pub async fn member(&self, http: &Http, user_id: UserId) -> Result<Cow<'_, Member>> {
-        if let Some(member) = self.members.get(&user_id) {
-            Ok(Cow::Borrowed(member))
-        } else {
-            http.get_member(self.id, user_id).await.map(Cow::Owned)
-        }
     }
 
     /// Gets a list of all the members (satisfying the status provided to the function) in this

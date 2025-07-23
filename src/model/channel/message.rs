@@ -1,16 +1,9 @@
 //! Models relating to Discord channels.
 
-#[cfg(feature = "model")]
-use std::borrow::Cow;
-
 use nonmax::NonMaxU64;
 
-#[cfg(all(feature = "model", feature = "utils"))]
-use crate::builder::{CreateAllowedMentions, CreateMessage, EditMessage};
 #[cfg(feature = "model")]
 use crate::constants;
-#[cfg(feature = "model")]
-use crate::http::{CacheHttp, Http};
 use crate::model::prelude::*;
 use crate::model::utils::{StrOrInt, discord_colours};
 
@@ -138,183 +131,6 @@ pub struct Message {
 
 #[cfg(feature = "model")]
 impl Message {
-    /// Crossposts this message.
-    ///
-    /// Requires either to be the message author or to have manage [Manage Messages] permissions on
-    /// this channel.
-    ///
-    /// **Note**: Only available on news channels.
-    ///
-    /// # Errors
-    ///
-    /// Returns a [`ModelError::MessageAlreadyCrossposted`] if the message has already been
-    /// crossposted.
-    ///
-    /// Returns a [`ModelError::CannotCrosspostMessage`] if the message cannot be crossposted.
-    ///
-    /// [Manage Messages]: Permissions::MANAGE_MESSAGES
-    pub async fn crosspost(&self, http: &Http) -> Result<Message> {
-        if let Some(flags) = self.flags {
-            if flags.contains(MessageFlags::CROSSPOSTED) {
-                return Err(Error::Model(ModelError::MessageAlreadyCrossposted));
-            } else if flags.contains(MessageFlags::IS_CROSSPOST)
-                || self.kind != MessageType::Regular
-            {
-                return Err(Error::Model(ModelError::CannotCrosspostMessage));
-            }
-        }
-
-        self.channel_id.expect_channel().crosspost(http, self.id).await
-    }
-
-    /// Deletes the message.
-    ///
-    /// **Note**: The logged in user must either be the author of the message or have the [Manage
-    /// Messages] permission.
-    ///
-    /// # Errors
-    ///
-    /// Returns [`Error::Http`] if the current user lacks permission or if invalid data is given.
-    ///
-    /// [Manage Messages]: Permissions::MANAGE_MESSAGES
-    pub async fn delete(&self, http: &Http, reason: Option<&str>) -> Result<()> {
-        self.channel_id.delete_message(http, self.id, reason).await
-    }
-
-    /// Deletes all of the [`Reaction`]s associated with the message.
-    ///
-    /// **Note**: Requires the [Manage Messages] permission.
-    ///
-    /// # Errors
-    ///
-    /// Returns [`Error::Http`] if the current user lacks permission or if invalid data is given.
-    ///
-    /// [Manage Messages]: Permissions::MANAGE_MESSAGES
-    pub async fn delete_reactions(&self, http: &Http) -> Result<()> {
-        self.channel_id.delete_reactions(http, self.id).await
-    }
-
-    /// Deletes the given [`Reaction`] from the message.
-    ///
-    /// **Note**: Requires the [Manage Messages] permission, _if_ the current user did not perform
-    /// the reaction.
-    ///
-    /// # Errors
-    ///
-    /// Returns [`Error::Http`] if the current user did not perform the reaction, or lacks
-    /// permission.
-    ///
-    /// [Manage Messages]: Permissions::MANAGE_MESSAGES
-    pub async fn delete_reaction(
-        &self,
-        http: &Http,
-        user_id: Option<UserId>,
-        reaction_type: impl Into<ReactionType>,
-    ) -> Result<()> {
-        self.channel_id.delete_reaction(http, self.id, user_id, reaction_type).await
-    }
-
-    /// Deletes all of the [`Reaction`]s of a given emoji associated with the message.
-    ///
-    /// **Note**: Requires the [Manage Messages] permission.
-    ///
-    /// # Errors
-    ///
-    /// Returns [`Error::Http`] if the current user lacks permission or if invalid data is given.
-    ///
-    /// [Manage Messages]: Permissions::MANAGE_MESSAGES
-    pub async fn delete_reaction_emoji(
-        &self,
-        http: &Http,
-        reaction_type: impl Into<ReactionType>,
-    ) -> Result<()> {
-        http.delete_message_reaction_emoji(self.channel_id, self.id, &reaction_type.into()).await
-    }
-
-    /// Edits this message, replacing the original content with new content.
-    ///
-    /// Message editing preserves all unchanged message data, with some exceptions for embeds and
-    /// attachments.
-    ///
-    /// **Note**: In most cases requires that the current user be the author of the message.
-    ///
-    /// Refer to the documentation for [`EditMessage`] for information regarding content
-    /// restrictions and requirements.
-    ///
-    /// # Examples
-    ///
-    /// Edit a message with new content:
-    ///
-    /// ```rust,no_run
-    /// # use serenity::builder::EditMessage;
-    /// # use serenity::model::channel::Message;
-    /// # use serenity::model::id::ChannelId;
-    /// # use serenity::http::Http;
-    /// #
-    /// # async fn run() -> Result<(), Box<dyn std::error::Error>> {
-    /// # let http: Http = unimplemented!();
-    /// # let mut message: Message = unimplemented!();
-    /// // assuming a `message` has already been bound
-    /// let builder = EditMessage::new().content("new content");
-    /// message.edit(&http, builder).await?;
-    /// # Ok(())
-    /// # }
-    /// ```
-    ///
-    /// # Errors
-    ///
-    /// If the `cache` is enabled, returns a [`ModelError::InvalidUser`] if the current user is not
-    /// the author. Otherwise returns [`Error::Http`] if the user lacks permission, as well as if
-    /// invalid data is given.
-    ///
-    /// Returns a [`ModelError::TooLarge`] if the message contents are too long.
-    ///
-    /// [Manage Messages]: Permissions::MANAGE_MESSAGES
-    pub async fn edit(
-        &mut self,
-        cache_http: impl CacheHttp,
-        builder: EditMessage<'_>,
-    ) -> Result<()> {
-        if let Some(flags) = self.flags
-            && flags.contains(MessageFlags::IS_VOICE_MESSAGE)
-        {
-            return Err(Error::Model(ModelError::CannotEditVoiceMessage));
-        }
-
-        *self = builder.execute(cache_http, self.channel_id, self.id, Some(self.author.id)).await?;
-        Ok(())
-    }
-
-    /// Gets the list of [`User`]s who have reacted to a [`Message`] with a certain [`Emoji`].
-    ///
-    /// The default `limit` is `50` - specify otherwise to receive a different maximum number of
-    /// users. The maximum that may be retrieve at a time is `100`, if a greater number is provided
-    /// then it is automatically reduced.
-    ///
-    /// The optional `after` attribute is to retrieve the users after a certain user. This is
-    /// useful for pagination.
-    ///
-    /// **Note**: Requires the [Read Message History] permission.
-    ///
-    /// **Note**: If the passed reaction_type is a custom guild emoji, it must contain the name.
-    /// So, [`Emoji`] or [`EmojiIdentifier`] will always work, [`ReactionType`] only if
-    /// [`ReactionType::Custom::name`] is Some, and **[`EmojiId`] will never work**.
-    ///
-    /// # Errors
-    ///
-    /// Returns [`Error::Http`] if the current user lacks permission.
-    ///
-    /// [Read Message History]: Permissions::READ_MESSAGE_HISTORY
-    pub async fn reaction_users(
-        &self,
-        http: &Http,
-        reaction_type: impl Into<ReactionType>,
-        limit: Option<u8>,
-        after: Option<UserId>,
-    ) -> Result<Vec<User>> {
-        self.channel_id.reaction_users(http, self.id, reaction_type, limit, after).await
-    }
-
     /// Checks the length of a message to ensure that it is within Discord's maximum length limit.
     ///
     /// Returns [`None`] if the message is within the limit, otherwise returns [`Some`] with an
@@ -329,74 +145,6 @@ impl Message {
         }
     }
 
-    /// Pins this message to its channel.
-    ///
-    /// **Note**: Requires the [Manage Messages] permission.
-    ///
-    /// # Errors
-    ///
-    /// Returns [`Error::Http`] if the current user lacks permission or if invalid data is given.
-    ///
-    /// [Manage Messages]: Permissions::MANAGE_MESSAGES
-    pub async fn pin(&self, http: &Http, reason: Option<&str>) -> Result<()> {
-        self.channel_id.pin(http, self.id, reason).await
-    }
-
-    /// React to the message with a custom [`Emoji`] or unicode character.
-    ///
-    /// **Note**: Requires the [Add Reactions] permission.
-    ///
-    /// # Errors
-    ///
-    /// Returns [`Error::Http`] if the current user lacks permission or if invalid data is given.
-    ///
-    /// [Add Reactions]: Permissions::ADD_REACTIONS
-    pub async fn react(&self, http: &Http, reaction_type: impl Into<ReactionType>) -> Result<()> {
-        http.create_reaction(self.channel_id, self.id, &reaction_type.into()).await
-    }
-
-    /// Uses Discord's inline reply to a user without pinging them.
-    ///
-    /// Refer to the documentation for [`CreateMessage`] for information regarding content
-    /// restrictions and requirements.
-    ///
-    /// # Errors
-    ///
-    /// See the documentation of [`CreateMessage::execute`] for possible errors.
-    pub async fn reply(&self, http: &Http, content: impl Into<Cow<'_, str>>) -> Result<Message> {
-        self.reply_(http, content.into(), false).await
-    }
-
-    /// Uses Discord's inline reply to a user with a ping.
-    ///
-    /// Refer to the documentation for [`CreateMessage`] for information regarding content
-    /// restrictions and requirements.
-    ///
-    /// # Errors
-    ///
-    /// See the documentation of [`CreateMessage::execute`] for possible errors.
-    pub async fn reply_ping(
-        &self,
-        http: &Http,
-        content: impl Into<Cow<'_, str>>,
-    ) -> Result<Message> {
-        self.reply_(http, content.into(), true).await
-    }
-
-    async fn reply_(&self, http: &Http, content: Cow<'_, str>, ping_user: bool) -> Result<Message> {
-        let default_allowed_mentions = http.default_allowed_mentions.clone();
-        let allowed_mentions = default_allowed_mentions.unwrap_or_else(|| {
-            CreateAllowedMentions::new().everyone(true).all_users(true).all_roles(true)
-        });
-
-        let builder = CreateMessage::new()
-            .content(content)
-            .reference_message(self)
-            .allowed_mentions(allowed_mentions.replied_user(ping_user));
-
-        self.channel_id.send_message(http, builder).await
-    }
-
     /// Checks whether the message mentions passed [`UserId`].
     #[must_use]
     pub fn mentions_user_id(&self, id: UserId) -> bool {
@@ -407,28 +155,6 @@ impl Message {
     #[must_use]
     pub fn mentions_user(&self, user: &User) -> bool {
         self.mentions_user_id(user.id)
-    }
-
-    /// Unpins the message from its channel.
-    ///
-    /// **Note**: Requires the [Manage Messages] permission.
-    ///
-    /// # Errors
-    ///
-    /// Returns [`Error::Http`] if the current user lacks permission or if invalid data is given.
-    ///
-    /// [Manage Messages]: Permissions::MANAGE_MESSAGES
-    pub async fn unpin(&self, http: &Http, reason: Option<&str>) -> Result<()> {
-        http.unpin_message(self.channel_id, self.id, reason).await
-    }
-
-    /// Ends the [`Poll`] on this message, if there is one.
-    ///
-    /// # Errors
-    ///
-    /// See [`GenericChannelId::end_poll`] for more information.
-    pub async fn end_poll(&self, http: &Http) -> Result<Self> {
-        self.channel_id.end_poll(http, self.id).await
     }
 
     /// Returns a link referencing this message. When clicked, users will jump to the message. The

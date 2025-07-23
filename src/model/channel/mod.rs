@@ -26,8 +26,6 @@ pub use self::message::*;
 pub use self::private_channel::*;
 pub use self::reaction::*;
 pub use self::thread::*;
-#[cfg(feature = "model")]
-use crate::http::Http;
 use crate::model::prelude::*;
 
 impl From<ThreadId> for GenericChannelId {
@@ -155,27 +153,6 @@ impl Channel {
             Self::Guild(c) if c.base.kind == ChannelType::Category => Some(c),
             _ => None,
         }
-    }
-
-    /// Deletes the inner channel.
-    ///
-    /// # Errors
-    ///
-    /// Returns [`Error::Http`] if the current user lacks permission.
-    pub async fn delete(&self, http: &Http, reason: Option<&str>) -> Result<()> {
-        match self {
-            Self::Guild(public_channel) => {
-                public_channel.delete(http, reason).await?;
-            },
-            Self::GuildThread(thread) => {
-                thread.delete(http, reason).await?;
-            },
-            Self::Private(private_channel) => {
-                private_channel.delete(http).await?;
-            },
-        }
-
-        Ok(())
     }
 
     /// Retrieves the inner Id.

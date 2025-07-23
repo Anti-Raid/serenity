@@ -15,32 +15,6 @@ pub enum Maximum {
     BulkDeleteAmount,
 }
 
-#[cfg(feature = "http")]
-impl Maximum {
-    pub(crate) fn check_overflow(self, value: usize) -> Result<(), Error> {
-        let max = self.value();
-        if value > max {
-            Err(Error::TooLarge {
-                maximum: self,
-                value,
-            })
-        } else {
-            Ok(())
-        }
-    }
-
-    pub(crate) fn value(self) -> usize {
-        match self {
-            Self::EmbedCount => crate::constants::EMBED_MAX_COUNT,
-            Self::EmbedLength => crate::constants::EMBED_MAX_LENGTH,
-            Self::MessageLength => crate::constants::MESSAGE_CODE_LIMIT,
-            Self::StickerCount => crate::constants::STICKER_MAX_COUNT,
-            Self::WebhookName | Self::BulkDeleteAmount => 100,
-            Self::AuditLogReason => 512,
-        }
-    }
-}
-
 impl fmt::Display for Maximum {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
@@ -60,28 +34,6 @@ impl fmt::Display for Maximum {
 pub enum Minimum {
     WebhookName,
     BulkDeleteAmount,
-}
-
-#[cfg(feature = "http")]
-impl Minimum {
-    pub(crate) fn check_underflow(self, value: usize) -> Result<(), Error> {
-        let min = self.value();
-        if value < min {
-            Err(Error::TooSmall {
-                minimum: self,
-                value,
-            })
-        } else {
-            Ok(())
-        }
-    }
-
-    pub(crate) fn value(self) -> usize {
-        match self {
-            Self::WebhookName => 2,
-            Self::BulkDeleteAmount => 1,
-        }
-    }
 }
 
 impl fmt::Display for Minimum {

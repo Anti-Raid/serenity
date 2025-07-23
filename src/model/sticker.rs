@@ -1,35 +1,5 @@
-#[cfg(feature = "model")]
-use crate::builder::EditSticker;
-#[cfg(feature = "model")]
-use crate::http::Http;
 use crate::model::prelude::*;
 use crate::model::utils::comma_separated_string;
-
-#[cfg(feature = "model")]
-impl StickerPackId {
-    /// Gets the [`StickerPack`] object.
-    ///
-    /// # Errors
-    ///
-    /// Returns [`Error::Http`] if a [`StickerPack`] with that [`StickerPackId`] does not exist, or
-    /// is otherwise unavailable.
-    pub async fn to_sticker_pack(self, http: &Http) -> Result<StickerPack> {
-        http.get_sticker_pack(self).await
-    }
-}
-
-#[cfg(feature = "model")]
-impl StickerId {
-    /// Requests the sticker via the REST API to get a [`Sticker`] with all details.
-    ///
-    /// # Errors
-    ///
-    /// Returns [`Error::Http`] if a [`Sticker`] with that [`StickerId`] does not exist, or is
-    /// otherwise unavailable.
-    pub async fn to_sticker(self, http: &Http) -> Result<Sticker> {
-        http.get_sticker(self).await
-    }
-}
 
 /// The smallest amount of data required to render a sticker.
 ///
@@ -141,66 +111,6 @@ pub struct Sticker {
 
 #[cfg(feature = "model")]
 impl Sticker {
-    /// Deletes the [`Sticker`] from its guild.
-    ///
-    /// **Note**: If the sticker was created by the current user, requires either the [Create Guild
-    /// Expressions] or the [Manage Guild Expressions] permission. Otherwise, the [Manage Guild
-    /// Expressions] permission is required.
-    ///
-    /// # Errors
-    ///
-    /// Returns [`Error::Http`] if the current user lacks permission to delete the sticker.
-    ///
-    /// [Create Guild Expressions]: Permissions::CREATE_GUILD_EXPRESSIONS
-    /// [Manage Guild Expressions]: Permissions::MANAGE_GUILD_EXPRESSIONS
-    pub async fn delete(&self, http: &Http, reason: Option<&str>) -> Result<()> {
-        if let Some(guild_id) = self.guild_id {
-            guild_id.delete_sticker(http, self.id, reason).await
-        } else {
-            Err(Error::Model(ModelError::DeleteNitroSticker))
-        }
-    }
-
-    /// Edits the sticker.
-    ///
-    /// **Note**: If the sticker was created by the current user, requires either the [Create Guild
-    /// Expressions] or the [Manage Guild Expressions] permission. Otherwise, the [Manage Guild
-    /// Expressions] permission is required.
-    ///
-    /// # Examples
-    ///
-    /// Rename a sticker:
-    ///
-    /// ```rust,no_run
-    /// # use serenity::http::Http;
-    /// # use serenity::model::id::GuildId;
-    /// # use serenity::model::sticker::Sticker;
-    /// use serenity::builder::EditSticker;
-    ///
-    /// # async fn run() -> Result<(), Box<dyn std::error::Error>> {
-    /// # let http: Http = unimplemented!();
-    /// # let mut sticker: Sticker = unimplemented!();
-    /// let builder = EditSticker::new().name("Bun bun meow");
-    /// sticker.edit(&http, builder).await?;
-    /// # Ok(())
-    /// # }
-    /// ```
-    ///
-    /// # Errors
-    ///
-    /// Returns [`Error::Http`] if the current user lacks permission.
-    ///
-    /// [Create Guild Expressions]: Permissions::CREATE_GUILD_EXPRESSIONS
-    /// [Manage Guild Expressions]: Permissions::MANAGE_GUILD_EXPRESSIONS
-    pub async fn edit(&mut self, http: &Http, builder: EditSticker<'_>) -> Result<()> {
-        if let Some(guild_id) = self.guild_id {
-            *self = guild_id.edit_sticker(http, self.id, builder).await?;
-            Ok(())
-        } else {
-            Err(Error::Model(ModelError::DeleteNitroSticker))
-        }
-    }
-
     /// Retrieves the URL to the sticker image.
     ///
     /// **Note**: This will only be `None` if the format_type is unknown.
