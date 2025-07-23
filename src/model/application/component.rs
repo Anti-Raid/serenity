@@ -42,6 +42,7 @@ enum_number! {
 #[cfg_attr(feature = "typesize", derive(typesize::derive::TypeSize))]
 #[derive(Clone, Debug, Serialize)]
 #[non_exhaustive]
+#[serde(untagged)]
 pub enum Component {
     ActionRow(ActionRow),
     Button(Button),
