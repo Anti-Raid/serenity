@@ -1,11 +1,7 @@
-#[cfg(feature = "cache")]
-use std::cmp::Reverse;
 use std::fmt;
 
 #[cfg(feature = "model")]
 use crate::builder::EditMember;
-#[cfg(feature = "cache")]
-use crate::cache::Cache;
 #[cfg(feature = "model")]
 use crate::http::Http;
 use crate::model::prelude::*;
@@ -145,43 +141,6 @@ impl Member {
     /// [Ban Members]: Permissions::BAN_MEMBERS
     pub async fn ban(&self, http: &Http, dms: u32, audit_log_reason: Option<&str>) -> Result<()> {
         self.guild_id.ban(http, self.user.id, dms, audit_log_reason).await
-    }
-
-    /// Determines the member's colour.
-    #[cfg(feature = "cache")]
-    pub fn colour(&self, cache: &Cache) -> Option<Colour> {
-        let guild = cache.guild(self.guild_id)?;
-
-        let mut roles = self
-            .roles
-            .iter()
-            .filter_map(|role_id| guild.roles.get(role_id))
-            .collect::<Vec<&Role>>();
-
-        roles.sort_by_key(|&b| Reverse(b));
-
-        let default = Colour::default();
-
-        roles.iter().find(|r| r.colour.0 != default.0).map(|r| r.colour)
-    }
-
-    /// Returns the "default channel" of the guild for the member. (This returns the first channel
-    /// that can be read by the member, if there isn't one returns [`None`])
-    #[cfg(feature = "cache")]
-    pub fn default_channel(&self, cache: &Cache) -> Option<GuildChannel> {
-        let guild = self.guild_id.to_guild_cached(cache)?;
-
-        let member = guild.members.get(&self.user.id)?;
-
-        for channel in &guild.channels {
-            if channel.base.kind != ChannelType::Category
-                && guild.user_permissions_in(channel, member).view_channel()
-            {
-                return Some(channel.clone());
-            }
-        }
-
-        None
     }
 
     /// Times the user out until `time`.
@@ -364,24 +323,6 @@ impl Member {
         }
 
         Ok(())
-    }
-
-    /// Retrieves the full role data for the user's roles.
-    ///
-    /// This is shorthand for manually searching through the Cache.
-    ///
-    /// If role data can not be found for the member, then [`None`] is returned.
-    #[cfg(feature = "cache")]
-    pub fn roles(&self, cache: &Cache) -> Option<Vec<Role>> {
-        Some(
-            cache
-                .guild(self.guild_id)?
-                .roles
-                .iter()
-                .filter(|r| self.roles.contains(&r.id))
-                .cloned()
-                .collect(),
-        )
     }
 
     /// Unbans the [`User`] from the guild.

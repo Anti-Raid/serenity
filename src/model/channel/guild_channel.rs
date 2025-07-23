@@ -11,8 +11,6 @@ use crate::builder::{
     EditStageInstance,
     EditVoiceState,
 };
-#[cfg(feature = "cache")]
-use crate::cache::{self, Cache};
 #[cfg(feature = "model")]
 use crate::http::Http;
 use crate::model::prelude::*;
@@ -42,15 +40,6 @@ pub struct BaseGuildChannel {
     #[doc(alias = "slowmode")]
     #[serde(default)]
     pub rate_limit_per_user: Option<NonMaxU16>,
-}
-
-#[cfg(feature = "model")]
-impl BaseGuildChannel {
-    /// Attempts to find this channel's guild in the Cache.
-    #[cfg(feature = "cache")]
-    pub fn guild<'a>(&self, cache: &'a Cache) -> Option<cache::GuildRef<'a>> {
-        cache.guild(self.guild_id)
-    }
 }
 
 /// Represents a channel in a [`Guild`], excluding thread information.
@@ -232,33 +221,6 @@ impl GuildChannel {
     /// permission to suppress another user or unsuppress the current user. This is not required if
     /// suppressing the current user.
     ///
-    /// # Example
-    ///
-    /// Invite a user to speak.
-    ///
-    /// ```rust
-    /// # #[cfg(feature = "cache")]
-    /// # async fn run() -> Result<(), Box<dyn std::error::Error>> {
-    /// # use std::sync::Arc;
-    /// # use serenity::{cache::Cache, http::Http, model::id::{GuildId, ChannelId, UserId}};
-    /// #
-    /// # let http: Http = unimplemented!();
-    /// # let cache = Cache::default();
-    /// # let (guild_id, channel_id, user_id) = (GuildId::new(1), ChannelId::new(1), UserId::new(1));
-    /// use serenity::builder::EditVoiceState;
-    /// use serenity::model::ModelError;
-    ///
-    /// let channel = {
-    ///     let guild = cache.guild(guild_id).ok_or(ModelError::ItemMissing)?;
-    ///     guild.channels.get(&channel_id).ok_or(ModelError::ItemMissing)?.clone()
-    /// };
-    ///
-    /// let builder = EditVoiceState::new().suppress(false);
-    /// channel.edit_voice_state(&http, user_id, builder).await?;
-    /// # Ok(())
-    /// # }
-    /// ```
-    ///
     /// # Errors
     ///
     /// Returns a [`ModelError::InvalidChannelType`] if the channel is not a stage channel.
@@ -284,38 +246,6 @@ impl GuildChannel {
     ///
     /// **Note**: Requires the [Request to Speak] permission. The [Mute Members] permission is
     /// **not** required.
-    ///
-    /// # Example
-    ///
-    /// Send a request to speak, then clear the request.
-    ///
-    /// ```rust
-    /// # #[cfg(feature = "cache")]
-    /// # async fn run() -> Result<(), Box<dyn std::error::Error>> {
-    /// # use std::sync::Arc;
-    /// # use serenity::{cache::Cache, http::Http, model::id::{GuildId, ChannelId}};
-    /// #
-    /// # let http: Http = unimplemented!();
-    /// # let cache = Cache::default();
-    /// # let (guild_id, channel_id) = (GuildId::new(1), ChannelId::new(1));
-    /// use serenity::builder::EditVoiceState;
-    /// use serenity::model::ModelError;
-    ///
-    /// let channel = {
-    ///     let guild = cache.guild(guild_id).ok_or(ModelError::ItemMissing)?;
-    ///     guild.channels.get(&channel_id).ok_or(ModelError::ItemMissing)?.clone()
-    /// };
-    ///
-    /// // Send a request to speak
-    /// let builder = EditVoiceState::new().request_to_speak(true);
-    /// channel.edit_own_voice_state(&http, builder.clone()).await?;
-    ///
-    /// // Clear own request to speak
-    /// let builder = builder.request_to_speak(false);
-    /// channel.edit_own_voice_state(&http, builder).await?;
-    /// # Ok(())
-    /// # }
-    /// ```
     ///
     /// # Errors
     ///
@@ -343,43 +273,6 @@ impl GuildChannel {
         let mut message = self.id.widen().send_message(http, builder).await?;
         message.guild_id = Some(self.base.guild_id);
         Ok(message)
-    }
-
-    /// Retrieves [`Member`]s from the current channel.
-    ///
-    /// [`ChannelType::Voice`] and [`ChannelType::Stage`] returns [`Member`]s using the channel.
-    ///
-    /// [`ChannelType::Text`] and [`ChannelType::News`] return [`Member`]s that can read the
-    /// channel.
-    ///
-    /// # Errors
-    ///
-    /// Other [`ChannelType`]s lack the concept of [`Member`]s and will return:
-    /// [`ModelError::InvalidChannelType`].
-    #[cfg(feature = "cache")]
-    pub fn members(&self, cache: &Cache) -> Result<Vec<Member>> {
-        let guild = cache.guild(self.base.guild_id).ok_or(ModelError::GuildNotFound)?;
-
-        match self.base.kind {
-            ChannelType::Voice | ChannelType::Stage => Ok(guild
-                .voice_states
-                .iter()
-                .filter_map(|v| {
-                    v.channel_id.and_then(|c| {
-                        if c == self.id { guild.members.get(&v.user_id).cloned() } else { None }
-                    })
-                })
-                .collect()),
-            ChannelType::News | ChannelType::Text => Ok(guild
-                .members
-                .iter()
-                .filter(|member| {
-                    guild.user_permissions_in(self, member).contains(Permissions::VIEW_CHANNEL)
-                })
-                .cloned()
-                .collect::<Vec<Member>>()),
-            _ => Err(Error::from(ModelError::InvalidChannelType)),
-        }
     }
 
     /// Creates a webhook in the channel.

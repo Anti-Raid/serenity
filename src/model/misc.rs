@@ -11,7 +11,7 @@ use std::str::FromStr;
 use aformat::ArrayString;
 
 use super::prelude::*;
-#[cfg(all(feature = "model", any(feature = "cache", feature = "utils")))]
+#[cfg(all(feature = "model", any(feature = "utils")))]
 use crate::utils;
 
 /// Hides the implementation detail of ImageHash as an enum.

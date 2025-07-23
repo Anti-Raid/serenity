@@ -15,7 +15,7 @@ edition.workspace = true
 rust-version.workspace = true
 
 [workspace]
-members = ["examples/*"]
+members = []
 
 [workspace.package]
 documentation = "https://docs.rs/serenity"

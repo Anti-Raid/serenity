@@ -4078,18 +4078,6 @@ impl Http {
         .await
     }
 
-    /// Gets our DM channels.
-    pub async fn get_user_dm_channels(&self) -> Result<Vec<PrivateChannel>> {
-        self.fire(Request {
-            body: None,
-            multipart: None,
-            headers: None,
-            method: LightMethod::Get,
-            route: Route::UserMeDmChannels,
-            params: None,
-        })
-        .await
-    }
 
     /// Gets all voice regions.
     pub async fn get_voice_regions(&self) -> Result<Vec<VoiceRegion>> {

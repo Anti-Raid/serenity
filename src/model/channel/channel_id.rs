@@ -4,9 +4,6 @@ use std::borrow::Cow;
 use std::sync::Arc;
 
 #[cfg(feature = "model")]
-use futures::stream::Stream;
-
-#[cfg(feature = "model")]
 use crate::builder::{
     CreateAttachment,
     CreateForumPost,
@@ -20,10 +17,6 @@ use crate::builder::{
     EditStageInstance,
     GetMessages,
 };
-#[cfg(all(feature = "cache", feature = "model"))]
-use crate::cache::Cache;
-#[cfg(all(feature = "cache", feature = "temp_cache", feature = "model"))]
-use crate::cache::MaybeOwnedArc;
 #[cfg(feature = "model")]
 use crate::http::{CacheHttp, Http, Typing};
 use crate::model::prelude::*;
@@ -41,56 +34,6 @@ impl ChannelId {
 
 #[cfg(feature = "model")]
 impl ChannelId {
-    /// Fetches a channel from the cache, falling back to HTTP/temp cache.
-    ///
-    /// It is highly recommended to pass the `guild_id` parameter as otherwise this may perform many
-    /// HTTP requests.
-    ///
-    /// # Errors
-    ///
-    /// Errors if the HTTP fallback fails, or if the channel does not come from the guild passed.
-    pub async fn to_guild_channel(
-        self,
-        cache_http: impl CacheHttp,
-        guild_id: Option<GuildId>,
-    ) -> Result<GuildChannel> {
-        #[cfg(feature = "cache")]
-        // Ignore clippy, the two `if let`s must be separated
-        #[expect(clippy::collapsible_if)]
-        if let Some(cache) = cache_http.cache() {
-            if let Some(guild_id) = guild_id
-                && let Some(guild) = cache.guild(guild_id)
-                && let Some(channel) = guild.channels.get(&self)
-            {
-                return Ok(channel.clone());
-            }
-
-            #[cfg(feature = "temp_cache")]
-            if let Some(temp_channel) = cache.temp_channels.get(&self) {
-                if guild_id.is_some_and(|id| temp_channel.base.guild_id != id) {
-                    return Err(Error::Model(ModelError::ChannelNotFound));
-                }
-
-                return Ok(GuildChannel::clone(&temp_channel));
-            }
-        }
-
-        let channel = cache_http.http().get_channel(self.widen()).await?;
-        let guild_channel = channel.guild().ok_or(ModelError::InvalidChannelType)?;
-
-        #[cfg(all(feature = "cache", feature = "temp_cache"))]
-        if let Some(cache) = cache_http.cache() {
-            let cached_channel = MaybeOwnedArc::new(guild_channel.clone());
-            cache.temp_channels.insert(self, cached_channel);
-        }
-
-        if guild_id.is_some_and(|id| guild_channel.base.guild_id != id) {
-            return Err(Error::Model(ModelError::ChannelNotFound));
-        }
-
-        Ok(guild_channel)
-    }
-
     /// Creates an invite for the given channel.
     ///
     /// **Note**: Requires the [Create Instant Invite] permission.
@@ -606,101 +549,6 @@ impl GenericChannelId {
         builder.execute(http, self, message_id, None).await
     }
 
-    /// Attempts to retrieve the channel from the guild cache, otherwise from HTTP/temp cache.
-    ///
-    /// # Errors
-    ///
-    /// Returns [`Error::Http`] if the channel retrieval request failed.
-    pub async fn to_channel(
-        self,
-        cache_http: impl CacheHttp,
-        guild_id: Option<GuildId>,
-    ) -> Result<Channel> {
-        #[cfg_attr(not(feature = "temp_cache"), expect(unused_variables))]
-        let (channel_id, thread_id) = self.split();
-
-        #[cfg(feature = "cache")]
-        if let Some(cache) = cache_http.cache() {
-            match guild_id.and_then(|id| cache.guild(id)).as_ref().and_then(|g| g.channel(self)) {
-                Some(GenericGuildChannelRef::Channel(chan)) => {
-                    return Ok(Channel::Guild(chan.clone()));
-                },
-                Some(GenericGuildChannelRef::Thread(th)) => {
-                    return Ok(Channel::GuildThread(th.clone()));
-                },
-                None => {},
-            }
-
-            #[cfg(feature = "temp_cache")]
-            {
-                if let Some(channel) = cache.temp_channels.get(&channel_id) {
-                    return Ok(Channel::Guild(GuildChannel::clone(&*channel)));
-                }
-
-                if let Some(thread) = cache.temp_threads.get(&thread_id) {
-                    return Ok(Channel::GuildThread(GuildThread::clone(&*thread)));
-                }
-            }
-        }
-
-        let channel = cache_http.http().get_channel(self).await?;
-
-        #[cfg(all(feature = "cache", feature = "temp_cache"))]
-        if let Some(cache) = cache_http.cache() {
-            match &channel {
-                Channel::Guild(guild_channel) => {
-                    let cached_channel = MaybeOwnedArc::new(guild_channel.clone());
-                    cache.temp_channels.insert(channel_id, cached_channel);
-                },
-                Channel::GuildThread(guild_thread) => {
-                    let cached_thread = MaybeOwnedArc::new(guild_thread.clone());
-                    cache.temp_threads.insert(thread_id, cached_thread);
-                },
-                // No access to `UserId`, so this can't cache.
-                Channel::Private(_) => {},
-            }
-        }
-
-        Ok(channel)
-    }
-
-    /// Gets a message from the channel.
-    ///
-    /// If the cache feature is enabled the cache will be checked first. If not found it will
-    /// resort to an http request.
-    ///
-    /// Requires the [Read Message History] permission.
-    ///
-    /// # Errors
-    ///
-    /// Returns [`Error::Http`] if the current user lacks permission.
-    ///
-    /// [Read Message History]: Permissions::READ_MESSAGE_HISTORY
-    pub async fn message(
-        self,
-        cache_http: impl CacheHttp,
-        message_id: MessageId,
-    ) -> Result<Message> {
-        #[cfg(feature = "cache")]
-        if let Some(cache) = cache_http.cache()
-            && let Some(message) = cache.message(self, message_id)
-        {
-            return Ok(message.clone());
-        }
-
-        let message = cache_http.http().get_message(self, message_id).await?;
-
-        #[cfg(feature = "temp_cache")]
-        if let Some(cache) = cache_http.cache() {
-            use crate::cache::MaybeOwnedArc;
-
-            let message = MaybeOwnedArc::new(message.clone());
-            cache.temp_messages.insert(message_id, message);
-        }
-
-        Ok(message)
-    }
-
     /// Gets messages from the channel.
     ///
     /// **Note**: If the user does not have the [Read Message History] permission, returns an empty
@@ -717,41 +565,6 @@ impl GenericChannelId {
         builder: GetMessages,
     ) -> Result<Vec<Message>> {
         builder.execute(cache_http, self).await
-    }
-
-    /// Streams over all the messages in a channel.
-    ///
-    /// This is accomplished and equivalent to repeated calls to [`Self::messages`]. A buffer of at
-    /// most 100 messages is used to reduce the number of calls necessary.
-    ///
-    /// The stream returns the newest message first, followed by older messages.
-    ///
-    /// # Examples
-    ///
-    /// ```rust,no_run
-    /// # use serenity::model::id::GenericChannelId;
-    /// # use serenity::http::Http;
-    /// #
-    /// # async fn run() {
-    /// # let channel_id = GenericChannelId::new(1);
-    /// # let ctx: Http = unimplemented!();
-    /// use serenity::futures::StreamExt;
-    /// use serenity::model::channel::MessagesIter;
-    ///
-    /// let mut messages = channel_id.messages_iter(&ctx).boxed();
-    /// while let Some(message_result) = messages.next().await {
-    ///     match message_result {
-    ///         Ok(message) => println!("{} said \"{}\".", message.author.name, message.content,),
-    ///         Err(error) => eprintln!("Uh oh! Error: {}", error),
-    ///     }
-    /// }
-    /// # }
-    /// ```
-    pub fn messages_iter(
-        self,
-        cache_http: &impl CacheHttp,
-    ) -> impl Stream<Item = Result<Message>> + '_ {
-        MessagesIter::stream(cache_http, self)
     }
 
     /// Pins a [`Message`] to the channel.
@@ -783,11 +596,6 @@ impl GenericChannelId {
     /// [Read Message History]: Permissions::READ_MESSAGE_HISTORY
     pub async fn pins(self, cache_http: impl CacheHttp) -> Result<Vec<Message>> {
         let messages = cache_http.http().get_pins(self).await?;
-
-        #[cfg(feature = "cache")]
-        if let Some(cache) = cache_http.cache() {
-            cache.fill_message_cache(self, messages.iter().cloned());
-        }
 
         Ok(messages)
     }
@@ -1068,126 +876,5 @@ impl From<&WebhookChannel> for ChannelId {
     /// Gets the Id of a webhook channel.
     fn from(webhook_channel: &WebhookChannel) -> ChannelId {
         webhook_channel.id
-    }
-}
-
-/// A helper class returned by [`GenericChannelId::messages_iter`]
-#[derive(Clone, Debug)]
-#[cfg(feature = "model")]
-pub struct MessagesIter<'a> {
-    http: &'a Http,
-    #[cfg(feature = "cache")]
-    cache: Option<&'a Arc<Cache>>,
-    channel_id: GenericChannelId,
-    buffer: Vec<Message>,
-    before: Option<MessageId>,
-    tried_fetch: bool,
-}
-
-#[cfg(feature = "model")]
-impl<'a> MessagesIter<'a> {
-    fn new(cache_http: &'a impl CacheHttp, channel_id: GenericChannelId) -> MessagesIter<'a> {
-        MessagesIter {
-            http: cache_http.http(),
-            #[cfg(feature = "cache")]
-            cache: cache_http.cache(),
-            channel_id,
-            buffer: Vec::new(),
-            before: None,
-            tried_fetch: false,
-        }
-    }
-
-    #[cfg(not(feature = "cache"))]
-    fn cache_http(&self) -> impl CacheHttp + '_ {
-        self.http
-    }
-
-    #[cfg(feature = "cache")]
-    fn cache_http(&self) -> impl CacheHttp + '_ {
-        (self.cache, self.http)
-    }
-
-    /// Fills the `self.buffer` cache with [`Message`]s.
-    ///
-    /// This drops any messages that were currently in the buffer. Ideally, it should only be
-    /// called when `self.buffer` is empty. Additionally, this updates `self.before` so that the
-    /// next call does not return duplicate items.
-    ///
-    /// If there are no more messages to be fetched, then this sets `self.before` as [`None`],
-    /// indicating that no more calls ought to be made.
-    ///
-    /// If this method is called with `self.before` as None, the last 100 (or lower) messages sent
-    /// in the channel are added in the buffer.
-    ///
-    /// The messages are sorted such that the newest message is the first element of the buffer and
-    /// the newest message is the last.
-    ///
-    /// [`Message`]: crate::model::channel::Message
-    async fn refresh(&mut self) -> Result<()> {
-        // Number of messages to fetch.
-        let grab_size = 100;
-
-        // If `self.before` is not set yet, we can use `.messages` to fetch the last message after
-        // very first fetch from last.
-        let mut builder = GetMessages::new().limit(grab_size);
-        if let Some(before) = self.before {
-            builder = builder.before(before);
-        }
-        self.buffer = self.channel_id.messages(self.cache_http(), builder).await?;
-
-        self.buffer.reverse();
-
-        self.before = self.buffer.first().map(|m| m.id);
-
-        self.tried_fetch = true;
-
-        Ok(())
-    }
-
-    /// Streams over all the messages in a channel.
-    ///
-    /// This is accomplished and equivalent to repeated calls to [`GenericChannelId::messages`]. A
-    /// buffer of at most 100 messages is used to reduce the number of calls necessary.
-    ///
-    /// The stream returns the newest message first, followed by older messages.
-    ///
-    /// # Examples
-    ///
-    /// ```rust,no_run
-    /// # use serenity::model::id::GenericChannelId;
-    /// # use serenity::http::Http;
-    /// #
-    /// # async fn run() {
-    /// # let channel_id = GenericChannelId::new(1);
-    /// # let http: Http = unimplemented!();
-    /// use serenity::futures::StreamExt;
-    /// use serenity::model::channel::MessagesIter;
-    ///
-    /// let mut messages = MessagesIter::stream(&http, channel_id).boxed();
-    /// while let Some(message_result) = messages.next().await {
-    ///     match message_result {
-    ///         Ok(message) => println!("{} said \"{}\"", message.author.name, message.content,),
-    ///         Err(error) => eprintln!("Uh oh! Error: {}", error),
-    ///     }
-    /// }
-    /// # }
-    /// ```
-    pub fn stream(
-        cache_http: &'a impl CacheHttp,
-        channel_id: GenericChannelId,
-    ) -> impl Stream<Item = Result<Message>> + 'a {
-        let init_state = MessagesIter::new(cache_http, channel_id);
-
-        futures::stream::unfold(init_state, |mut state| async {
-            if (state.buffer.is_empty() && state.before.is_some() || !state.tried_fetch)
-                && let Err(error) = state.refresh().await
-            {
-                return Some((Err(error), state));
-            }
-
-            // the resultant stream goes from newest to oldest.
-            state.buffer.pop().map(|entry| (Ok(entry), state))
-        })
     }
 }

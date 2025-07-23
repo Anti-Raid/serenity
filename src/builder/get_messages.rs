@@ -112,11 +112,6 @@ impl GetMessages {
         let search_filter = self.search_filter.map(Into::into);
         let messages = http.get_messages(channel_id, search_filter, self.limit).await?;
 
-        #[cfg(feature = "cache")]
-        if let Some(cache) = cache_http.cache() {
-            cache.fill_message_cache(channel_id, messages.iter().cloned());
-        }
-
         Ok(messages)
     }
 }

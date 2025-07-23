@@ -1,7 +1,5 @@
 use std::num::NonZeroU16;
 use std::sync::Arc;
-#[cfg(feature = "framework")]
-use std::sync::OnceLock;
 use std::time::{Duration, Instant};
 
 use dashmap::DashMap;
@@ -22,13 +20,9 @@ use super::{
     ShardRunnerMessage,
     ShardRunnerOptions,
 };
-#[cfg(feature = "cache")]
-use crate::cache::Cache;
-#[cfg(feature = "framework")]
-use crate::framework::Framework;
 #[cfg(feature = "voice")]
 use crate::gateway::VoiceGatewayManager;
-use crate::gateway::client::{EventHandler, RawEventHandler};
+use crate::gateway::client::EventHandler;
 use crate::gateway::{ConnectionStage, GatewayError, PresenceData, TransportCompression};
 use crate::http::Http;
 use crate::internal::prelude::*;
@@ -52,11 +46,6 @@ pub struct ShardManager {
     pub data: Arc<dyn std::any::Any + Send + Sync>,
     /// A reference to an [`EventHandler`].
     pub event_handler: Option<Arc<dyn EventHandler>>,
-    /// A reference to a [`RawEventHandler`].
-    pub raw_event_handler: Option<Arc<dyn RawEventHandler>>,
-    /// A copy of the framework.
-    #[cfg(feature = "framework")]
-    pub framework: Arc<OnceLock<Arc<dyn Framework>>>,
     /// The instant that a shard was last started.
     ///
     /// This is used to determine how long to wait between shard IDENTIFYs.
@@ -79,8 +68,6 @@ pub struct ShardManager {
     pub shard_total: NonZeroU16,
     /// Number of seconds to wait between each start.
     pub wait_time_between_shard_start: Duration,
-    #[cfg(feature = "cache")]
-    pub cache: Arc<Cache>,
     pub http: Arc<Http>,
     pub intents: GatewayIntents,
     pub presence: Option<PresenceData>,
@@ -98,9 +85,6 @@ impl ShardManager {
 
             data: opt.data,
             event_handler: opt.event_handler,
-            raw_event_handler: opt.raw_event_handler,
-            #[cfg(feature = "framework")]
-            framework: opt.framework,
             last_start: None,
             queue: ShardQueue::new(opt.max_concurrency),
             runners: Arc::new(DashMap::new()),
@@ -109,8 +93,6 @@ impl ShardManager {
             ws_url: opt.ws_url,
             compression: opt.compression,
             shard_total: opt.shard_total,
-            #[cfg(feature = "cache")]
-            cache: opt.cache,
             http: opt.http,
             intents: opt.intents,
             presence: opt.presence,
@@ -242,16 +224,11 @@ impl ShardManager {
         let mut runner = ShardRunner::new(ShardRunnerOptions {
             data: Arc::clone(&self.data),
             event_handler: self.event_handler.clone(),
-            raw_event_handler: self.raw_event_handler.clone(),
-            #[cfg(feature = "framework")]
-            framework: self.framework.get().cloned(),
             runners: Arc::clone(&self.runners),
             manager_tx: self.manager_tx.clone(),
             #[cfg(feature = "voice")]
             voice_manager: self.voice_manager.clone(),
             shard,
-            #[cfg(feature = "cache")]
-            cache: Arc::clone(&self.cache),
             http: Arc::clone(&self.http),
         });
 
@@ -297,9 +274,6 @@ pub struct ShardManagerOptions {
     pub token: Token,
     pub data: Arc<dyn std::any::Any + Send + Sync>,
     pub event_handler: Option<Arc<dyn EventHandler>>,
-    pub raw_event_handler: Option<Arc<dyn RawEventHandler>>,
-    #[cfg(feature = "framework")]
-    pub framework: Arc<OnceLock<Arc<dyn Framework>>>,
     #[cfg(feature = "voice")]
     pub voice_manager: Option<Arc<dyn VoiceGatewayManager>>,
     pub ws_url: Arc<str>,
@@ -307,8 +281,6 @@ pub struct ShardManagerOptions {
     pub shard_total: NonZeroU16,
     pub max_concurrency: NonZeroU16,
     pub wait_time_between_shard_start: Duration,
-    #[cfg(feature = "cache")]
-    pub cache: Arc<Cache>,
     pub http: Arc<Http>,
     pub intents: GatewayIntents,
     pub presence: Option<PresenceData>,

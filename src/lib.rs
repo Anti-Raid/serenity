@@ -90,12 +90,6 @@ pub mod prelude;
 
 #[cfg(feature = "builder")]
 pub mod builder;
-#[cfg(feature = "cache")]
-pub mod cache;
-#[cfg(feature = "collector")]
-pub mod collector;
-#[cfg(feature = "framework")]
-pub mod framework;
 #[cfg(feature = "gateway")]
 pub mod gateway;
 #[cfg(feature = "http")]
@@ -119,17 +113,8 @@ pub mod all {
     #[cfg(feature = "builder")]
     #[doc(no_inline)]
     pub use crate::builder::*;
-    #[cfg(feature = "cache")]
-    #[doc(no_inline)]
-    pub use crate::cache::*;
-    #[cfg(feature = "collector")]
-    #[doc(no_inline)]
-    pub use crate::collector::*;
     #[doc(no_inline)]
     pub use crate::constants::*;
-    #[cfg(feature = "framework")]
-    #[doc(no_inline)]
-    pub use crate::framework::*;
     #[cfg(feature = "gateway")]
     #[doc(no_inline)]
     pub use crate::gateway::{client::*, *};
@@ -153,6 +138,7 @@ pub mod all {
         model::prelude::*,
         *,
     };
+    pub use crate::model::event::IEvent; // Re-export the IEvent struct for convenience
 }
 
 // Re-exports of crates used internally which are already publically exposed.

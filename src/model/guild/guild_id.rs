@@ -24,10 +24,8 @@ use crate::builder::{
     EditSticker,
     ImageData,
 };
-#[cfg(all(feature = "cache", feature = "model"))]
-use crate::cache::{Cache, GuildRef};
 #[cfg(feature = "model")]
-use crate::http::{CacheHttp, Http, UserPagination};
+use crate::http::{Http, UserPagination};
 #[cfg(feature = "model")]
 use crate::model::error::Maximum;
 use crate::model::prelude::*;
@@ -933,33 +931,6 @@ impl GuildId {
         RoleId::from(self.get())
     }
 
-    /// Tries to find the [`Guild`] by its Id in the cache.
-    #[cfg(feature = "cache")]
-    pub fn to_guild_cached(self, cache: &Cache) -> Option<GuildRef<'_>> {
-        cache.guild(self)
-    }
-
-    /// Requests [`PartialGuild`] over REST API.
-    ///
-    /// **Note**: This will not be a [`Guild`], as the REST API does not send
-    /// all data with a guild retrieval.
-    ///
-    /// # Errors
-    ///
-    /// Returns an [`Error::Http`] if the current user is not in the guild.
-    pub async fn to_partial_guild(self, cache_http: impl CacheHttp) -> Result<PartialGuild> {
-        #[cfg(feature = "cache")]
-        {
-            if let Some(cache) = cache_http.cache()
-                && let Some(guild) = cache.guild(self)
-            {
-                return Ok(guild.clone().into());
-            }
-        }
-
-        cache_http.http().get_guild(self).await
-    }
-
     /// Requests [`PartialGuild`] over REST API with counts.
     ///
     /// **Note**: This will not be a [`Guild`], as the REST API does not send all data with a guild
@@ -1075,29 +1046,6 @@ impl GuildId {
         http.leave_guild(self).await
     }
 
-    /// Gets a user's [`Member`] for the guild by Id.
-    ///
-    /// If the cache feature is enabled the cache will be checked first. If not found it will
-    /// resort to an http request.
-    ///
-    /// # Errors
-    ///
-    /// Returns an [`Error::Http`] if the user is not in the guild, or if the guild is otherwise
-    /// unavailable
-    pub async fn member(self, cache_http: impl CacheHttp, user_id: UserId) -> Result<Member> {
-        #[cfg(feature = "cache")]
-        {
-            if let Some(cache) = cache_http.cache()
-                && let Some(guild) = cache.guild(self)
-                && let Some(member) = guild.members.get(&user_id)
-            {
-                return Ok(member.clone());
-            }
-        }
-
-        cache_http.http().get_member(self, user_id).await
-    }
-
     /// Gets a list of the guild's members.
     ///
     /// Optionally pass in the `limit` to limit the number of results. Minimum value is 1, maximum
@@ -1167,13 +1115,6 @@ impl GuildId {
     ) -> Result<Member> {
         let builder = EditMember::new().voice_channel(channel_id);
         self.edit_member(http, user_id, builder).await
-    }
-
-    /// Returns the name of whatever guild this id holds.
-    #[cfg(feature = "cache")]
-    #[must_use]
-    pub fn name(self, cache: &Cache) -> Option<String> {
-        self.to_guild_cached(cache).map(|g| g.name.to_string())
     }
 
     /// Disconnects a member from a voice channel in the guild.

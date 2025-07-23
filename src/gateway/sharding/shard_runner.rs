@@ -9,21 +9,14 @@ use tokio_tungstenite::tungstenite::protocol::frame::CloseFrame;
 use tracing::instrument;
 use tracing::{debug, error, trace, warn};
 
-#[cfg(feature = "collector")]
-use super::CollectorCallback;
-use super::{Shard, ShardAction, ShardManagerMessage, ShardRunnerInfo, ShardStageUpdateEvent};
-#[cfg(feature = "cache")]
-use crate::cache::Cache;
-#[cfg(feature = "framework")]
-use crate::framework::Framework;
+use super::{Shard, ShardAction, ShardManagerMessage, ShardRunnerInfo};
 #[cfg(feature = "voice")]
 use crate::gateway::VoiceGatewayManager;
 use crate::gateway::client::dispatch::dispatch_model;
-use crate::gateway::client::{Context, EventHandler, RawEventHandler};
+use crate::gateway::client::{Context, EventHandler};
 use crate::gateway::{ActivityData, ChunkGuildFilter, GatewayError};
 use crate::http::Http;
 use crate::internal::prelude::*;
-use crate::internal::tokio::spawn_named;
 #[cfg(feature = "voice")]
 use crate::model::event::Event;
 use crate::model::event::GatewayEvent;
@@ -36,9 +29,6 @@ use crate::model::user::OnlineStatus;
 pub struct ShardRunner {
     data: Arc<dyn std::any::Any + Send + Sync>,
     event_handler: Option<Arc<dyn EventHandler>>,
-    raw_event_handler: Option<Arc<dyn RawEventHandler>>,
-    #[cfg(feature = "framework")]
-    framework: Option<Arc<dyn Framework>>,
     runners: Arc<DashMap<ShardId, (ShardRunnerInfo, Sender<ShardRunnerMessage>)>>,
     // channel to send messages back to the shard manager
     manager_tx: Sender<ShardManagerMessage>,
@@ -49,8 +39,6 @@ pub struct ShardRunner {
     pub(crate) shard: Shard,
     #[cfg(feature = "voice")]
     voice_manager: Option<Arc<dyn VoiceGatewayManager + 'static>>,
-    #[cfg(feature = "cache")]
-    pub cache: Arc<Cache>,
     pub http: Arc<Http>,
     #[cfg(feature = "collector")]
     pub(crate) collectors: Arc<parking_lot::RwLock<Vec<CollectorCallback>>>,
@@ -64,9 +52,6 @@ impl ShardRunner {
         Self {
             data: opt.data,
             event_handler: opt.event_handler,
-            raw_event_handler: opt.raw_event_handler,
-            #[cfg(feature = "framework")]
-            framework: opt.framework,
             runners: opt.runners,
             manager_tx: opt.manager_tx,
             runner_rx: rx,
@@ -74,8 +59,6 @@ impl ShardRunner {
             shard: opt.shard,
             #[cfg(feature = "voice")]
             voice_manager: opt.voice_manager,
-            #[cfg(feature = "cache")]
-            cache: opt.cache,
             http: opt.http,
             #[cfg(feature = "collector")]
             collectors: Arc::new(parking_lot::RwLock::new(vec![])),
@@ -143,27 +126,6 @@ impl ShardRunner {
 
             if post != pre {
                 self.update_runner_info();
-
-                if let Some(event_handler) = &self.event_handler {
-                    let event_handler = Arc::clone(event_handler);
-                    let context = self.make_context();
-                    let event = ShardStageUpdateEvent {
-                        new: post,
-                        old: pre,
-                        shard_id: self.shard.shard_info().id,
-                    };
-
-                    spawn_named("dispatch::event_handler::shard_stage_update", async move {
-                        event_handler
-                            .dispatch(
-                                &context,
-                                &crate::gateway::client::FullEvent::ShardStageUpdate {
-                                    event,
-                                },
-                            )
-                            .await;
-                    });
-                }
             }
 
             if let Some(action) = action {
@@ -207,11 +169,7 @@ impl ShardRunner {
                         if self
                             .event_handler
                             .as_ref()
-                            .is_none_or(|handler| handler.filter_event(&context, &event))
-                            && self
-                                .raw_event_handler
-                                .as_ref()
-                                .is_none_or(|handler| handler.filter_event(&context, &event))
+                            .is_none()
                         {
                             #[cfg(feature = "collector")]
                             self.collectors.write().retain(|callback| (callback.0)(&event));
@@ -219,10 +177,7 @@ impl ShardRunner {
                             dispatch_model(
                                 event,
                                 context,
-                                #[cfg(feature = "framework")]
-                                self.framework.clone(),
                                 self.event_handler.clone(),
-                                self.raw_event_handler.clone(),
                             )
                             .await;
                         }
@@ -458,8 +413,6 @@ impl ShardRunner {
             manager: self.manager_tx.clone(),
             shard_id: self.shard.shard_info().id,
             http: Arc::clone(&self.http),
-            #[cfg(feature = "cache")]
-            cache: Arc::clone(&self.cache),
             runners: Arc::clone(&self.runners),
             #[cfg(feature = "collector")]
             collectors: Arc::clone(&self.collectors),
@@ -475,16 +428,11 @@ impl ShardRunner {
 pub struct ShardRunnerOptions {
     pub data: Arc<dyn std::any::Any + Send + Sync>,
     pub event_handler: Option<Arc<dyn EventHandler>>,
-    pub raw_event_handler: Option<Arc<dyn RawEventHandler>>,
-    #[cfg(feature = "framework")]
-    pub framework: Option<Arc<dyn Framework>>,
     pub runners: Arc<DashMap<ShardId, (ShardRunnerInfo, Sender<ShardRunnerMessage>)>>,
     pub manager_tx: Sender<ShardManagerMessage>,
     pub shard: Shard,
     #[cfg(feature = "voice")]
     pub voice_manager: Option<Arc<dyn VoiceGatewayManager>>,
-    #[cfg(feature = "cache")]
-    pub cache: Arc<Cache>,
     pub http: Arc<Http>,
 }
 

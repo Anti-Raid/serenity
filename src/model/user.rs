@@ -10,7 +10,7 @@ use serde::{Deserialize, Serialize};
 
 use super::prelude::*;
 #[cfg(feature = "model")]
-use crate::builder::{CreateMessage, EditProfile};
+use crate::builder::EditProfile;
 #[cfg(feature = "model")]
 use crate::http::{CacheHttp, Http};
 #[cfg(feature = "model")]
@@ -374,22 +374,6 @@ impl User {
         banner_url(self.id, self.banner.as_ref())
     }
 
-    /// Creates a direct message channel between the [current user] and the user. This can also
-    /// retrieve the channel if one already exists.
-    ///
-    /// [current user]: CurrentUser
-    ///
-    /// # Errors
-    ///
-    /// See [`UserId::create_dm_channel`] for what errors may be returned.
-    pub async fn create_dm_channel(&self, cache_http: impl CacheHttp) -> Result<PrivateChannel> {
-        if self.bot() {
-            return Err(Error::Model(ModelError::MessagingBot));
-        }
-
-        self.id.create_dm_channel(cache_http).await
-    }
-
     /// Returns the formatted URL to the user's default avatar URL.
     ///
     /// This will produce a PNG URL.
@@ -425,26 +409,6 @@ impl User {
     #[must_use]
     pub fn static_face(&self) -> String {
         self.static_avatar_url().unwrap_or_else(|| self.default_avatar_url())
-    }
-
-    /// Check if a user has a [`Role`]. This will retrieve the [`Guild`] from the [`Cache`] if it
-    /// is available, and then check if that guild has the given [`Role`].
-    ///
-    /// [`Cache`]: crate::cache::Cache
-    ///
-    /// # Errors
-    ///
-    /// Returns an [`Error::Http`] if the given [`Guild`] is unavailable, if that [`Role`] does not
-    /// exist in the given [`Guild`], or if the given [`User`] is not in that [`Guild`].
-    ///
-    /// May also return an [`Error::Json`] if there is an error in deserializing the API response.
-    pub async fn has_role(
-        &self,
-        cache_http: impl CacheHttp,
-        guild_id: GuildId,
-        role: RoleId,
-    ) -> Result<bool> {
-        guild_id.member(cache_http, self.id).await.map(|m| m.roles.contains(&role))
     }
 
     /// Refreshes the information about the user.
@@ -496,31 +460,6 @@ impl User {
     pub fn tag(&self) -> std::borrow::Cow<'_, str> {
         tag(&self.name, self.discriminator)
     }
-
-    /// Returns the user's nickname in the given `guild_id`.
-    ///
-    /// If none is used, it returns [`None`].
-    pub async fn nick_in(&self, cache_http: impl CacheHttp, guild_id: GuildId) -> Option<String> {
-        // This can't be removed because `GuildId::member` clones the entire `Member` struct if
-        // it's present in the cache, which is expensive.
-        #[cfg(feature = "cache")]
-        {
-            if let Some(cache) = cache_http.cache()
-                && let Some(guild) = guild_id.to_guild_cached(cache)
-                && let Some(member) = guild.members.get(&self.id)
-            {
-                return member.nick.clone().map(Into::into);
-            }
-        }
-
-        // At this point we're guaranteed to do an API call.
-        guild_id
-            .member(cache_http, self.id)
-            .await
-            .ok()
-            .and_then(|member| member.nick)
-            .map(Into::into)
-    }
 }
 
 impl fmt::Display for User {
@@ -533,102 +472,6 @@ impl fmt::Display for User {
 
 #[cfg(feature = "model")]
 impl UserId {
-    /// Creates a direct message channel between the [current user] and the user. This can also
-    /// retrieve the channel if one already exists.
-    ///
-    /// # Errors
-    ///
-    /// Returns [`Error::Http`] if a [`User`] with that [`UserId`] does not exist, or is otherwise
-    /// unavailable.
-    ///
-    /// May also return an [`Error::Json`] if there is an error in deserializing the channel data
-    /// returned by the Discord API.
-    ///
-    /// [current user]: CurrentUser
-    pub async fn create_dm_channel(self, cache_http: impl CacheHttp) -> Result<PrivateChannel> {
-        #[derive(serde::Serialize)]
-        struct CreateDmChannel {
-            recipient_id: UserId,
-        }
-
-        #[cfg(feature = "temp_cache")]
-        if let Some(cache) = cache_http.cache() {
-            if let Some(private_channel) = cache.temp_private_channels.get(&self) {
-                return Ok(PrivateChannel::clone(&private_channel));
-            }
-        }
-
-        let body = CreateDmChannel {
-            recipient_id: self,
-        };
-
-        let channel = cache_http.http().create_private_channel(&body).await?;
-
-        #[cfg(feature = "temp_cache")]
-        if let Some(cache) = cache_http.cache() {
-            use crate::cache::MaybeOwnedArc;
-
-            let cached_channel = MaybeOwnedArc::new(channel.clone());
-            cache.temp_private_channels.insert(self, cached_channel);
-        }
-
-        Ok(channel)
-    }
-
-    /// Sends a message to a user through a direct message channel. This is a channel that can only
-    /// be accessed by you and the recipient.
-    ///
-    /// # Examples
-    ///
-    /// When a user sends a message with a content of `"~help"`, DM the author a help message
-    ///
-    /// ```rust,no_run
-    /// # use serenity::prelude::*;
-    /// # use serenity::model::prelude::*;
-    /// # use serenity::http::Http;
-    /// use serenity::builder::CreateMessage;
-    ///
-    /// # async fn run() -> Result<(), Box<dyn std::error::Error>> {
-    /// # let http: Http = unimplemented!();
-    /// # let msg: Message = unimplemented!();
-    ///
-    /// if msg.content == "~help" {
-    ///     let builder = CreateMessage::new().content("Helpful info here.");
-    ///
-    ///     if let Err(why) = msg.author.id.direct_message(&http, builder).await {
-    ///         println!("Err sending help: {why:?}");
-    ///         let _ = msg.reply(&http, "There was an error DMing you help.").await;
-    ///     };
-    /// }
-    ///
-    /// # Ok(())
-    /// # }
-    /// ```
-    ///
-    /// # Errors
-    ///
-    /// Returns a [`ModelError::MessagingBot`] if the user being direct messaged is a bot user.
-    ///
-    /// May also return an [`Error::Http`] if the user cannot be sent a direct message.
-    ///
-    /// Returns an [`Error::Json`] if there is an error deserializing the API response.
-    pub async fn direct_message(
-        self,
-        cache_http: impl CacheHttp,
-        builder: CreateMessage<'_>,
-    ) -> Result<Message> {
-        // Do not refactor this to a one liner. The PrivateChannel from `create_dm_channel`
-        // should be dropped before the `send_message` call to avoid bloating future sizes.
-        let dm_channel_id = self.create_dm_channel(&cache_http).await?.id;
-        dm_channel_id.widen().send_message(cache_http.http(), builder).await
-    }
-
-    /// This is an alias of [`Self::direct_message`].
-    #[expect(clippy::missing_errors_doc)]
-    pub async fn dm(self, http: &Http, builder: CreateMessage<'_>) -> Result<Message> {
-        self.direct_message(http, builder).await
-    }
-
     /// First attempts to find a [`User`] by its Id in the `temp_cache` if enabled,
     /// upon failure requests it via the REST API.
     ///

@@ -1,20 +1,12 @@
 //! A set of utilities to help with common use cases that are not required to fully use the
 //! library.
 
-#[cfg(feature = "gateway")]
-mod argument_convert;
-#[cfg(feature = "cache")]
-mod content_safe;
 mod custom_message;
 mod formatted_timestamp;
 mod message_builder;
 
 use std::num::NonZeroU16;
 
-#[cfg(feature = "gateway")]
-pub use argument_convert::*;
-#[cfg(feature = "cache")]
-pub use content_safe::*;
 pub use formatted_timestamp::*;
 use url::Url;
 

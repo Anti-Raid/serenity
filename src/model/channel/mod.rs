@@ -18,8 +18,6 @@ use serde::ser::SerializeMap as _;
 use serde_json::value::RawValue;
 
 pub use self::attachment::*;
-#[cfg(feature = "model")]
-pub use self::channel_id::*;
 pub use self::embed::*;
 pub use self::followed_channel::*;
 pub use self::guild_channel::*;

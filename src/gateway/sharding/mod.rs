@@ -55,9 +55,10 @@ pub use self::shard_manager::{
 pub use self::shard_queue::ShardQueue;
 pub use self::shard_runner::{ShardRunner, ShardRunnerMessage, ShardRunnerOptions};
 use super::{ActivityData, ChunkGuildFilter, GatewayError, PresenceData, WsClient};
+use crate::all::{IEvent, ReadyEvent};
 use crate::constants::{self, CloseCode};
 use crate::internal::prelude::*;
-use crate::model::event::{DeserializedEvent, Event, GatewayEvent, UnknownEvent};
+use crate::model::event::GatewayEvent;
 use crate::model::gateway::{GatewayIntents, ShardInfo};
 #[cfg(feature = "voice")]
 use crate::model::id::ChannelId;
@@ -308,29 +309,18 @@ impl Shard {
     fn handle_gateway_dispatch(
         &mut self,
         seq: u64,
-        event: DeserializedEvent,
-    ) -> Option<Box<Event>> {
+        event: Box<IEvent>,
+    ) -> Result<Option<Box<IEvent>>> {
         if seq > self.seq + 1 {
             warn!("[{:?}] Sequence off; them: {}, us: {}", self.info, seq, self.seq);
         }
 
         self.seq = seq;
 
-        let event = match event {
-            DeserializedEvent::Success(event) => event,
-            DeserializedEvent::Unknown(UnknownEvent {
-                ty,
-                ref data,
-            }) => {
-                debug!("Unknown event: {ty}");
-                debug!("Failing event data: {data:?}");
-                return None;
-            },
-        };
-
-        match &*event {
-            Event::Ready(ready) => {
-                debug!("[{:?}] Received Ready", self.info);
+        match event.ty.as_str() {
+            "READY" => {
+                let ready: ReadyEvent = serde_json::from_str(event.data.get())
+                .map_err(Error::Json)?;
 
                 self.resume_metadata = Some(ResumeMetadata {
                     session_id: ready.ready.session_id.clone(),
@@ -342,7 +332,7 @@ impl Shard {
                     callback(ready.ready.application.id);
                 }
             },
-            Event::Resumed(_) => {
+            "RESUMED" => {
                 info!("[{:?}] Resumed", self.info);
 
                 self.stage = ConnectionStage::Connected;
@@ -350,10 +340,10 @@ impl Shard {
                 self.last_heartbeat_sent = Some(Instant::now());
                 self.last_heartbeat_ack = None;
             },
-            _ => {},
+            _ => {}
         }
 
-        Some(event)
+        Ok(Some(event))
     }
 
     #[cfg_attr(feature = "tracing_instrument", instrument(skip(self)))]
@@ -444,7 +434,7 @@ impl Shard {
             Ok(GatewayEvent::Dispatch {
                 seq,
                 event,
-            }) => Ok(self.handle_gateway_dispatch(seq, event).map(ShardAction::Dispatch)),
+            }) => Ok(self.handle_gateway_dispatch(seq, event)?.map(ShardAction::Dispatch)),
             Ok(GatewayEvent::Heartbeat) => {
                 info!("[{:?}] Received shard heartbeat", self.info);
 
@@ -713,7 +703,7 @@ pub enum ShardAction {
     Heartbeat,
     Identify,
     Reconnect,
-    Dispatch(Box<Event>),
+    Dispatch(Box<IEvent>),
 }
 
 /// Information about a [`ShardRunner`].
@@ -809,20 +799,6 @@ impl fmt::Display for ConnectionStage {
             Self::Identifying => "identifying",
             Self::Resuming => "resuming",
         })
-    }
-}
-
-/// Newtype around a callback that will be called on every incoming request. As long as this
-/// collector should still receive events, it should return `true`. Once it returns `false`, it is
-/// removed.
-#[cfg(feature = "collector")]
-#[derive(Clone)]
-pub struct CollectorCallback(pub Arc<dyn Fn(&Event) -> bool + Send + Sync>);
-
-#[cfg(feature = "collector")]
-impl fmt::Debug for CollectorCallback {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.debug_tuple("CollectorCallback").finish()
     }
 }
 

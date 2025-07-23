@@ -14,7 +14,7 @@ use serde::ser::{Serialize, SerializeMap, Serializer};
 use tracing::warn;
 
 #[cfg(feature = "model")]
-use crate::http::{CacheHttp, Http};
+use crate::http::Http;
 use crate::model::prelude::*;
 use crate::model::utils::discord_colours_opt;
 
@@ -90,23 +90,6 @@ impl Serialize for Reaction {
 
 #[cfg(feature = "model")]
 impl Reaction {
-    /// Retrieves the associated the reaction was made in.
-    ///
-    /// If the cache is enabled, this will search for the already-cached channel. If not - or the
-    /// channel was not found - this will perform a request over the REST API for the channel.
-    ///
-    /// Requires the [Read Message History] permission.
-    ///
-    /// # Errors
-    ///
-    /// Returns [`Error::Http`] if the current user lacks permission, or if the channel no longer
-    /// exists.
-    ///
-    /// [Read Message History]: Permissions::READ_MESSAGE_HISTORY
-    pub async fn channel(&self, cache_http: impl CacheHttp) -> Result<Channel> {
-        self.channel_id.to_channel(cache_http, self.guild_id).await
-    }
-
     /// Deletes the reaction, but only if the current user is the user who made the reaction or has
     /// permission to.
     ///
@@ -137,46 +120,6 @@ impl Reaction {
     /// [permissions]: crate::model::permissions
     pub async fn delete_all(&self, http: &Http) -> Result<()> {
         http.delete_message_reaction_emoji(self.channel_id, self.message_id, &self.emoji).await
-    }
-
-    /// Retrieves the [`Message`] associated with this reaction.
-    ///
-    /// Requires the [Read Message History] permission.
-    ///
-    /// # Errors
-    ///
-    /// Returns [`Error::Http`] if the current user lacks permission to read message history, or if
-    /// the message was deleted.
-    ///
-    /// [Read Message History]: Permissions::READ_MESSAGE_HISTORY
-    pub async fn message(&self, cache_http: impl CacheHttp) -> Result<Message> {
-        self.channel_id.message(cache_http, self.message_id).await
-    }
-
-    /// Retrieves the user that made the reaction.
-    ///
-    /// If the cache is enabled, this will search for the already-cached user. If not - or the user
-    /// was not found - this will perform a request over the REST API for the user.
-    ///
-    /// # Errors
-    ///
-    /// Returns [`Error::Http`] if the user that made the reaction is unable to be retrieved from
-    /// the API.
-    pub async fn user(&self, cache_http: impl CacheHttp) -> Result<User> {
-        if let Some(id) = self.user_id {
-            id.to_user(cache_http).await
-        } else {
-            // This can happen if only Http was passed to Message::react, even though
-            // "cache" was enabled.
-            #[cfg(feature = "cache")]
-            {
-                if let Some(cache) = cache_http.cache() {
-                    return Ok(cache.current_user().clone().into());
-                }
-            }
-
-            Ok(cache_http.http().get_current_user().await?.into())
-        }
     }
 
     /// Retrieves the list of [`User`]s who have reacted to a [`Message`] with a certain [`Emoji`].

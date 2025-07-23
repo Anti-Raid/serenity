@@ -7,8 +7,6 @@ use nonmax::NonMaxU64;
 
 #[cfg(all(feature = "model", feature = "utils"))]
 use crate::builder::{CreateAllowedMentions, CreateMessage, EditMessage};
-#[cfg(all(feature = "cache", feature = "model"))]
-use crate::cache::{Cache, GuildRef};
 #[cfg(feature = "model")]
 use crate::constants;
 #[cfg(feature = "model")]
@@ -169,79 +167,6 @@ impl Message {
         self.channel_id.expect_channel().crosspost(http, self.id).await
     }
 
-    /// Retrieves the [`Channel`] the message was sent in.
-    ///
-    /// See [`GenericChannelId::to_channel`] for information about how this is retrieved.
-    ///
-    /// # Errors
-    ///
-    /// Can return an error if the HTTP request fails.
-    pub async fn channel(&self, cache_http: impl CacheHttp) -> Result<Channel> {
-        self.channel_id.to_channel(cache_http, self.guild_id).await
-    }
-
-    /// Retrieves the [`GuildChannel`] the message was sent in.
-    ///
-    /// See [`ChannelId::to_guild_channel`] for information on how this is retrieved.
-    ///
-    /// # Errors
-    ///
-    /// Can return an error if the HTTP request fails, or this is not called in a guild channel.
-    pub async fn guild_channel(&self, cache_http: impl CacheHttp) -> Result<GuildChannel> {
-        self.channel_id.expect_channel().to_guild_channel(cache_http, self.guild_id).await
-    }
-
-    /// Retrieves the [`GuildThread`] the message was sent in.
-    ///
-    /// See [`ThreadId::to_thread`] for information on how this is retrieved.
-    ///
-    /// # Errors
-    ///
-    /// Can return an error if the HTTP request fails, or this is not called in a guild thread.
-    pub async fn guild_thread(&self, cache_http: impl CacheHttp) -> Result<GuildThread> {
-        self.channel_id.expect_thread().to_thread(cache_http, self.guild_id).await
-    }
-
-    /// Calculates the permissions of the message author in the current channel.
-    ///
-    /// This handles the [`Permissions::SEND_MESSAGES_IN_THREADS`] permission for threads, setting
-    /// [`Permissions::SEND_MESSAGES`] accordingly if this message was sent in a thread.
-    ///
-    /// This may return `None` if:
-    /// - The [`Cache`] does not have the current [`Guild`]
-    /// - The [`Guild`] does not have the current channel cached (should never happen).
-    /// - This message is not from [`MessageCreateEvent`] and the author's [`Member`] cannot be
-    ///   found in [`Guild#structfield.members`].
-    #[cfg(feature = "cache")]
-    pub fn author_permissions(&self, cache: &Cache) -> Option<Permissions> {
-        let Some(guild_id) = self.guild_id else {
-            return Some(Permissions::dm_permissions());
-        };
-
-        let guild = cache.guild(guild_id)?;
-        let (channel_id, thread_id) = self.channel_id.split();
-        let (channel, is_thread) = if let Some(channel) = guild.channels.get(&channel_id) {
-            (channel, false)
-        } else if let Some(thread) = guild.threads.get(&thread_id) {
-            let channel = guild.channels.get(&thread.parent_id)?;
-            (channel, true)
-        } else {
-            return None;
-        };
-
-        let mut permissions = if let Some(member) = &self.member {
-            guild.partial_member_permissions_in(channel, self.author.id, member)
-        } else {
-            guild.user_permissions_in(channel, guild.members.get(&self.author.id)?)
-        };
-
-        if is_thread {
-            permissions.set(Permissions::SEND_MESSAGES, permissions.send_messages_in_threads());
-        }
-
-        Some(permissions)
-    }
-
     /// Deletes the message.
     ///
     /// **Note**: The logged in user must either be the author of the message or have the [Manage
@@ -360,20 +285,6 @@ impl Message {
         Ok(())
     }
 
-    /// Returns message content, but with user and role mentions replaced with
-    /// names and everyone/here mentions cancelled.
-    #[cfg(all(feature = "cache", feature = "utils"))]
-    pub fn content_safe(&self, cache: &Cache) -> String {
-        let Some(guild) = self.guild(cache) else { return self.content.to_string() };
-
-        let options = crate::utils::ContentSafeOptions::new()
-            .clean_user(true)
-            .clean_role(true)
-            .clean_everyone(true);
-
-        crate::utils::content_safe(&guild, &self.content, options, &self.mentions)
-    }
-
     /// Gets the list of [`User`]s who have reacted to a [`Message`] with a certain [`Emoji`].
     ///
     /// The default `limit` is `50` - specify otherwise to receive a different maximum number of
@@ -402,32 +313,6 @@ impl Message {
         after: Option<UserId>,
     ) -> Result<Vec<User>> {
         self.channel_id.reaction_users(http, self.id, reaction_type, limit, after).await
-    }
-
-    /// Returns the associated [`Guild`] for the message if one is in the cache.
-    ///
-    /// Returns [`None`] if the guild's Id could not be found via [`Self::guild_id`] or if the
-    /// Guild itself is not cached.
-    ///
-    /// Requires the `cache` feature be enabled.
-    #[cfg(feature = "cache")]
-    pub fn guild<'a>(&self, cache: &'a Cache) -> Option<GuildRef<'a>> {
-        cache.guild(self.guild_id?)
-    }
-
-    /// Retrieves a clone of the author's Member instance, if this message was sent in a guild.
-    ///
-    /// If the instance cannot be found in the cache, or the `cache` feature is disabled, a HTTP
-    /// request is performed to retrieve it from Discord's API.
-    ///
-    /// # Errors
-    ///
-    /// [`ModelError::ItemMissing`] is returned if [`Self::guild_id`] is [`None`].
-    pub async fn member(&self, cache_http: impl CacheHttp) -> Result<Member> {
-        match self.guild_id {
-            Some(guild_id) => guild_id.member(cache_http, self.author.id).await,
-            None => Err(Error::Model(ModelError::ItemMissing)),
-        }
     }
 
     /// Checks the length of a message to ensure that it is within Discord's maximum length limit.
@@ -524,24 +409,6 @@ impl Message {
         self.mentions_user_id(user.id)
     }
 
-    /// Checks whether the message mentions the current user.
-    ///
-    /// # Errors
-    ///
-    /// May return [`Error::Http`] if the `cache` feature is not enabled, or if the cache is
-    /// otherwise unavailable.
-    pub async fn mentions_me(&self, cache_http: impl CacheHttp) -> Result<bool> {
-        #[cfg(feature = "cache")]
-        {
-            if let Some(cache) = cache_http.cache() {
-                return Ok(self.mentions_user_id(cache.current_user().id));
-            }
-        }
-
-        let current_user = cache_http.http().get_current_user().await?;
-        Ok(self.mentions_user_id(current_user.id))
-    }
-
     /// Unpins the message from its channel.
     ///
     /// **Note**: Requires the [Manage Messages] permission.
@@ -564,31 +431,11 @@ impl Message {
         self.channel_id.end_poll(http, self.id).await
     }
 
-    /// Tries to return author's nickname in the current channel's guild.
-    ///
-    /// Refer to [`User::nick_in()`] inside and [`None`] outside of a guild.
-    pub async fn author_nick(&self, cache_http: impl CacheHttp) -> Option<String> {
-        self.author.nick_in(cache_http, self.guild_id?).await
-    }
-
     /// Returns a link referencing this message. When clicked, users will jump to the message. The
     /// link will be valid for messages in either private channels or guilds.
     #[must_use]
     pub fn link(&self) -> String {
         self.id.link(self.channel_id, self.guild_id)
-    }
-
-    /// Retrieves the message channel's category ID if the channel has one.
-    pub async fn category_id(&self, cache_http: impl CacheHttp) -> Option<ChannelId> {
-        #[cfg(feature = "cache")]
-        if let Some(cache) = cache_http.cache()
-            && let Some(guild) = cache.guild(self.guild_id?)
-        {
-            let channel = guild.channels.get(&self.channel_id.expect_channel())?;
-            return channel.parent_id;
-        }
-
-        cache_http.http().get_channel(self.channel_id).await.ok()?.guild()?.parent_id
     }
 }
 
@@ -1131,86 +978,4 @@ pub struct PollAnswerCount {
     pub id: AnswerId,
     pub count: u64,
     pub me_voted: bool,
-}
-
-// all tests here require cache, move if non-cache test is added
-#[cfg(all(test, feature = "cache"))]
-mod tests {
-    use dashmap::DashMap;
-    use extract_map::ExtractMap;
-    use small_fixed_array::FixedArray;
-
-    use super::{
-        Guild,
-        GuildChannel,
-        Member,
-        Message,
-        PermissionOverwrite,
-        PermissionOverwriteType,
-        Permissions,
-        User,
-        UserId,
-    };
-    use crate::cache::Cache;
-    use crate::cache::wrappers::MaybeMap;
-
-    fn new_extract_map<K, T>(val: T) -> ExtractMap<K, T>
-    where
-        K: std::hash::Hash + Eq,
-        T: extract_map::ExtractKey<K>,
-    {
-        let mut map = ExtractMap::new();
-        map.insert(val);
-        map
-    }
-
-    /// Test that author_permissions checks the permissions in a channel, not just the guild.
-    #[test]
-    fn author_permissions_respects_overwrites() {
-        // Author of the message, with a random ID that won't collide with defaults.
-        let author = User {
-            id: UserId::new(50778944701071),
-            ..Default::default()
-        };
-
-        // Channel with the message, with SEND_MESSAGES on.
-        let channel = GuildChannel {
-            permission_overwrites: FixedArray::from_vec_trunc(vec![PermissionOverwrite {
-                allow: Permissions::SEND_MESSAGES,
-                deny: Permissions::default(),
-                kind: PermissionOverwriteType::Member(author.id),
-            }]),
-            ..Default::default()
-        };
-        let channel_id = channel.id.widen();
-
-        // Guild with the author and channel cached, default (empty) permissions.
-        let guild = Guild {
-            channels: new_extract_map(channel),
-            members: new_extract_map(Member {
-                user: author.clone(),
-                ..Default::default()
-            }),
-            ..Default::default()
-        };
-
-        // Message, tied to the guild and the channel.
-        let message = Message {
-            author,
-            channel_id,
-            guild_id: Some(guild.id),
-            ..Default::default()
-        };
-
-        // Cache, with the guild setup.
-        let mut cache = Cache::new();
-        cache.guilds = MaybeMap(Some({
-            let guilds = DashMap::default();
-            guilds.insert(guild.id, guild);
-            guilds
-        }));
-
-        // The author should only have the one permission, SEND_MESSAGES.
-        assert_eq!(message.author_permissions(&cache), Some(Permissions::SEND_MESSAGES));
-    }
 }

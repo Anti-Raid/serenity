@@ -39,8 +39,6 @@ pub use self::ratelimiting::*;
 pub use self::request::*;
 pub use self::routing::*;
 pub use self::typing::*;
-#[cfg(feature = "cache")]
-use crate::cache::Cache;
 use crate::model::prelude::*;
 
 /// This trait will be required by functions that need [`Http`] and can optionally use a [`Cache`]
@@ -50,12 +48,6 @@ use crate::model::prelude::*;
 /// the [`CacheHttp::cache`] method will simply return `None`.
 pub trait CacheHttp: Send + Sync {
     fn http(&self) -> &Http;
-
-    #[cfg(feature = "cache")]
-    #[must_use]
-    fn cache(&self) -> Option<&Arc<Cache>> {
-        None
-    }
 }
 
 impl<T> CacheHttp for &T
@@ -65,10 +57,6 @@ where
     fn http(&self) -> &Http {
         (*self).http()
     }
-    #[cfg(feature = "cache")]
-    fn cache(&self) -> Option<&Arc<Cache>> {
-        (*self).cache()
-    }
 }
 
 impl<T> CacheHttp for Arc<T>
@@ -77,21 +65,6 @@ where
 {
     fn http(&self) -> &Http {
         (**self).http()
-    }
-    #[cfg(feature = "cache")]
-    fn cache(&self) -> Option<&Arc<Cache>> {
-        (**self).cache()
-    }
-}
-
-#[cfg(feature = "cache")]
-impl CacheHttp for (Option<&Arc<Cache>>, &Http) {
-    fn cache(&self) -> Option<&Arc<Cache>> {
-        self.0
-    }
-
-    fn http(&self) -> &Http {
-        self.1
     }
 }
 

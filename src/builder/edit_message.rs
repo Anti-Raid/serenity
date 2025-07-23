@@ -185,16 +185,6 @@ impl<'a> EditMessage<'a> {
         self
     }
 
-    #[cfg(feature = "cache")]
-    fn is_only_suppress_embeds(&self) -> bool {
-        self.flags == Some(MessageFlags::SUPPRESS_EMBEDS)
-            && self.content.is_none()
-            && self.embeds.is_none()
-            && self.allowed_mentions.is_none()
-            && self.components.is_none()
-            && self.attachments.is_none()
-    }
-
     /// Edits a message in the channel.
     ///
     /// **Note**: Message contents must be under 2000 unicode code points, and embeds must be under
@@ -219,24 +209,14 @@ impl<'a> EditMessage<'a> {
     /// [Manage Messages]: Permissions::MANAGE_MESSAGES
     /// [`From<Embed>`]: CreateEmbed#impl-From<Embed>
     #[cfg(feature = "http")]
-    #[cfg_attr(not(feature = "cache"), allow(unused_variables))]
     pub async fn execute(
         mut self,
         cache_http: impl CacheHttp,
         channel_id: GenericChannelId,
         message_id: MessageId,
-        user_id: Option<UserId>,
+        _user_id: Option<UserId>,
     ) -> Result<Message> {
         self.check_length()?;
-
-        #[cfg(feature = "cache")]
-        if let Some(user_id) = user_id
-            && let Some(cache) = cache_http.cache()
-            && user_id != cache.current_user().id
-            && !self.is_only_suppress_embeds()
-        {
-            return Err(Error::Model(ModelError::InvalidUser));
-        }
 
         let files = self.attachments.as_ref().map_or(Vec::new(), EditAttachments::new_attachments);
 

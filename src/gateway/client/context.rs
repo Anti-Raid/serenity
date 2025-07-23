@@ -2,11 +2,6 @@ use std::sync::Arc;
 
 use dashmap::DashMap;
 use futures::channel::mpsc::UnboundedSender as Sender;
-
-#[cfg(feature = "cache")]
-pub use crate::cache::Cache;
-#[cfg(feature = "collector")]
-use crate::gateway::CollectorCallback;
 use crate::gateway::{
     ActivityData,
     ChunkGuildFilter,
@@ -45,21 +40,13 @@ pub struct Context {
     /// The ID of the shard this context is related to.
     pub shard_id: ShardId,
     pub http: Arc<Http>,
-    #[cfg(feature = "cache")]
-    pub cache: Arc<Cache>,
     /// Metadata about the initialised shards, and their control channels.
     pub runners: Arc<DashMap<ShardId, (ShardRunnerInfo, Sender<ShardRunnerMessage>)>>,
-    #[cfg(feature = "collector")]
-    pub(crate) collectors: Arc<parking_lot::RwLock<Vec<CollectorCallback>>>,
 }
 
 impl CacheHttp for Context {
     fn http(&self) -> &Http {
         &self.http
-    }
-    #[cfg(feature = "cache")]
-    fn cache(&self) -> Option<&Arc<Cache>> {
-        Some(&self.cache)
     }
 }
 

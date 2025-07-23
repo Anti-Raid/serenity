@@ -4,7 +4,7 @@ use serde::Serialize;
 #[cfg(feature = "model")]
 use crate::builder::EditGuild;
 #[cfg(feature = "model")]
-use crate::http::{CacheHttp, Http};
+use crate::http::Http;
 use crate::model::prelude::*;
 #[cfg(feature = "model")]
 use crate::model::utils::icon_url;
@@ -172,16 +172,6 @@ impl PartialGuild {
         Ok(())
     }
 
-    /// Gets a partial amount of guild data by its Id.
-    ///
-    /// # Errors
-    ///
-    /// Returns [`Error::Http`] if the current user is not
-    /// in the guild.
-    pub async fn get(cache_http: impl CacheHttp, guild_id: GuildId) -> Result<PartialGuild> {
-        guild_id.to_partial_guild(cache_http).await
-    }
-
     /// Calculate a [`Member`]'s permissions in the guild.
     ///
     /// You likely want to use PartialGuild::user_permissions_in instead as this function does not
@@ -307,39 +297,6 @@ impl PartialGuild {
     #[must_use]
     pub fn splash_url(&self) -> Option<String> {
         self.splash.as_ref().map(|splash| cdn!("/splashes/{}/{}.webp?size=4096", self.id, splash))
-    }
-
-    /// Obtain a reference to a role by its name.
-    ///
-    /// **Note**: If two or more roles have the same name, obtained reference will be one of them.
-    ///
-    /// # Examples
-    ///
-    /// Obtain a reference to a [`Role`] by its name.
-    ///
-    /// ```rust,no_run
-    /// # use serenity::model::prelude::*;
-    /// # use serenity::prelude::*;
-    ///
-    /// # #[cfg(feature = "cache")]
-    /// # async fn run() -> Result<(), Box<dyn std::error::Error>> {
-    /// # let cache: serenity::cache::Cache = unimplemented!();
-    /// # let msg: Message = unimplemented!();
-    ///
-    /// if let Some(guild_id) = msg.guild_id {
-    ///     if let Some(guild) = guild_id.to_guild_cached(&cache) {
-    ///         if let Some(role) = guild.role_by_name("role_name") {
-    ///             println!("Obtained role's reference: {:?}", role);
-    ///         }
-    ///     }
-    /// }
-    ///
-    /// # Ok(())
-    /// # }
-    /// ```
-    #[must_use]
-    pub fn role_by_name(&self, role_name: &str) -> Option<&Role> {
-        self.roles.iter().find(|role| role_name == &*role.name)
     }
 }
 

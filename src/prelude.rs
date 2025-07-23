@@ -19,7 +19,7 @@ pub use crate::error::Error as SerenityError;
 #[cfg(feature = "gateway")]
 pub use crate::gateway::GatewayError;
 #[cfg(feature = "gateway")]
-pub use crate::gateway::client::{Client, Context, EventHandler, RawEventHandler};
+pub use crate::gateway::client::{Client, Context, EventHandler};
 #[cfg(feature = "http")]
 pub use crate::http::CacheHttp;
 #[cfg(feature = "http")]
@@ -28,3 +28,4 @@ pub use crate::model::mention::Mentionable;
 #[cfg(feature = "model")]
 pub use crate::model::{ModelError, gateway::GatewayIntents};
 pub use crate::secrets::Token;
+pub use crate::model::event::IEvent;
