@@ -3,9 +3,6 @@ use std::collections::HashMap;
 use serde::Serialize;
 
 use super::{InstallationContext, InteractionContext};
-#[cfg(feature = "model")]
-#[cfg(feature = "model")]
-use crate::http::Http;
 use crate::model::prelude::*;
 
 /// The base command model that belongs to an application.
@@ -84,45 +81,6 @@ pub struct Command {
     ///
     /// [`PrimaryEntryPoint`]: CommandType::PrimaryEntryPoint
     pub handler: Option<EntryPointHandlerType>,
-}
-
-#[cfg(feature = "model")]
-impl Command {
-    /// Gets all global commands.
-    ///
-    /// # Errors
-    ///
-    /// If there is an error, it will be either [`Error::Http`] or [`Error::Json`].
-    pub async fn get_global_commands(http: &Http) -> Result<Vec<Command>> {
-        http.get_global_commands().await
-    }
-
-    /// Gets all global commands with localizations.
-    ///
-    /// # Errors
-    ///
-    /// If there is an error, it will be either [`Error::Http`] or [`Error::Json`].
-    pub async fn get_global_commands_with_localizations(http: &Http) -> Result<Vec<Command>> {
-        http.get_global_commands_with_localizations().await
-    }
-
-    /// Gets a global command by its Id.
-    ///
-    /// # Errors
-    ///
-    /// If there is an error, it will be either [`Error::Http`] or [`Error::Json`].
-    pub async fn get_global_command(http: &Http, command_id: CommandId) -> Result<Command> {
-        http.get_global_command(command_id).await
-    }
-
-    /// Deletes a global command by its Id.
-    ///
-    /// # Errors
-    ///
-    /// If there is an error, it will be either [`Error::Http`] or [`Error::Json`].
-    pub async fn delete_global_command(http: &Http, command_id: CommandId) -> Result<()> {
-        http.delete_global_command(command_id).await
-    }
 }
 
 enum_number! {

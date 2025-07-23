@@ -2,9 +2,6 @@ use serde::de::Error as DeError;
 use serde::ser::{Serialize, SerializeMap as _};
 use serde_json::from_value;
 
-#[cfg(feature = "model")]
-#[cfg(feature = "model")]
-use crate::http::Http;
 use crate::model::prelude::*;
 
 /// An interaction triggered by a message component.
@@ -55,38 +52,6 @@ pub struct ComponentInteraction {
     pub authorizing_integration_owners: AuthorizingIntegrationOwners,
     /// The context where the interaction was triggered from.
     pub context: Option<InteractionContext>,
-}
-
-#[cfg(feature = "model")]
-impl ComponentInteraction {
-    /// Gets the interaction response.
-    ///
-    /// # Errors
-    ///
-    /// Returns an [`Error::Http`] if there is no interaction response.
-    pub async fn get_response(&self, http: &Http) -> Result<Message> {
-        http.get_original_interaction_response(&self.token).await
-    }
-
-    /// Deletes a followup message.
-    ///
-    /// # Errors
-    ///
-    /// May return [`Error::Http`] if the API returns an error. Such as if the response was already
-    /// deleted.
-    pub async fn delete_followup(&self, http: &Http, message_id: MessageId) -> Result<()> {
-        http.delete_followup_message(&self.token, message_id).await
-    }
-
-    /// Gets a followup message.
-    ///
-    /// # Errors
-    ///
-    /// May return [`Error::Http`] if the API returns an error. Such as if the response was
-    /// deleted.
-    pub async fn get_followup(&self, http: &Http, message_id: MessageId) -> Result<Message> {
-        http.get_followup_message(&self.token, message_id).await
-    }
 }
 
 // Manual impl needed to insert guild_id into model data
