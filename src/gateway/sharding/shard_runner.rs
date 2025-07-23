@@ -166,7 +166,7 @@ impl ShardRunner {
                         }
 
                         let context = self.make_context();
-                        if self
+                        if !self
                             .event_handler
                             .as_ref()
                             .is_none()
