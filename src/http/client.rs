@@ -4120,7 +4120,7 @@ impl Http {
                 guild_id,
                 user_id,
             },
-            params: None
+            params: None,
         })
         .await
     }
