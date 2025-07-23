@@ -319,6 +319,7 @@ impl Shard {
 
         match event.ty.as_str() {
             "READY" => {
+                info!("[{:?}] Received READY event", self.info);
                 let ready: ReadyEvent = serde_json::from_str(event.data.get())
                 .map_err(Error::Json)?;
 
@@ -434,7 +435,10 @@ impl Shard {
             Ok(GatewayEvent::Dispatch {
                 seq,
                 event,
-            }) => Ok(self.handle_gateway_dispatch(seq, event)?.map(ShardAction::Dispatch)),
+            }) => {
+                trace!("[{:?}] Received shard dispatch: {}", self.info, event.ty);
+                Ok(self.handle_gateway_dispatch(seq, event)?.map(ShardAction::Dispatch))
+            },
             Ok(GatewayEvent::Heartbeat) => {
                 info!("[{:?}] Received shard heartbeat", self.info);
 
