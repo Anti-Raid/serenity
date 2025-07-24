@@ -6,14 +6,13 @@ use std::str::FromStr;
 use percent_encoding::{NON_ALPHANUMERIC, utf8_percent_encode};
 use serde::de::Error as DeError;
 use serde::ser::{Serialize, SerializeMap, Serializer};
-#[cfg(feature = "model")]
 use crate::model::prelude::*;
 use crate::model::utils::discord_colours_opt;
 
 /// An emoji reaction to a message.
 ///
 /// [Discord docs](https://discord.com/developers/docs/topics/gateway#message-reaction-add-message-reaction-add-event-fields).
-#[cfg_attr(feature = "typesize", derive(typesize::derive::TypeSize))]
+
 #[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(remote = "Self")]
 #[non_exhaustive]
@@ -54,7 +53,7 @@ pub struct Reaction {
 enum_number! {
     /// A list of types a reaction can be.
     #[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd, Deserialize, Serialize)]
-    #[cfg_attr(feature = "typesize", derive(typesize::derive::TypeSize))]
+    
     #[non_exhaustive]
     pub enum ReactionTypes {
         Normal = 0,
@@ -81,7 +80,7 @@ impl Serialize for Reaction {
 }
 
 /// The type of a [`Reaction`] sent.
-#[cfg_attr(feature = "typesize", derive(typesize::derive::TypeSize))]
+
 #[derive(Clone, Debug, Eq, PartialEq, Hash)]
 #[non_exhaustive]
 pub enum ReactionType {

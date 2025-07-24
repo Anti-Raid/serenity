@@ -3,7 +3,6 @@ use std::sync::Arc;
 use dashmap::DashMap;
 use futures::channel::mpsc::UnboundedSender as Sender;
 use crate::gateway::{
-    ActivityData,
     ChunkGuildFilter,
     ShardManagerMessage,
     ShardRunnerInfo,
@@ -79,83 +78,6 @@ impl Context {
         self.data
             .downcast_ref()
             .expect("Type provided to Context should be the same as ClientBuilder::data.")
-    }
-
-    /// Sets the current user as being [`Online`]. This maintains the current activity.
-    ///
-    /// [`Online`]: OnlineStatus::Online
-    pub fn online(&self) {
-        self.set_status(OnlineStatus::Online);
-    }
-
-    /// Sets the current user as being [`Idle`]. This maintains the current activity.
-    ///
-    /// [`Idle`]: OnlineStatus::Idle
-    pub fn idle(&self) {
-        self.set_status(OnlineStatus::Idle);
-    }
-
-    /// Sets the current user as being [`DoNotDisturb`]. This maintains the current activity.
-    ///
-    ///
-    /// [`DoNotDisturb`]: OnlineStatus::DoNotDisturb
-    pub fn dnd(&self) {
-        self.set_status(OnlineStatus::DoNotDisturb);
-    }
-
-    /// Sets the current user as being [`Invisible`]. This maintains the current activity.
-    ///
-    /// [`Invisible`]: OnlineStatus::Invisible
-    pub fn invisible(&self) {
-        self.set_status(OnlineStatus::Invisible);
-    }
-
-    /// Sets the user's current online status.
-    ///
-    /// Note that [`Offline`] is not a valid online status, so it is automatically converted to
-    /// [`Invisible`].
-    ///
-    /// [`Invisible`]: OnlineStatus::Invisible
-    /// [`Offline`]: OnlineStatus::Offline
-    pub fn set_status(&self, mut online_status: OnlineStatus) {
-        if online_status == OnlineStatus::Offline {
-            online_status = OnlineStatus::Invisible;
-        }
-
-        self.send_to_shard(ShardRunnerMessage::SetPresence {
-            activity: None,
-            status: Some(online_status),
-        });
-    }
-
-    /// "Resets" the current user's presence, by setting the activity to [`None`] and the online
-    /// status to [`Online`].
-    ///
-    /// Use [`Self::set_presence`] for fine-grained control over individual details.
-    ///
-    /// [`Online`]: OnlineStatus::Online
-    pub fn reset_presence(&self) {
-        self.set_presence(None, OnlineStatus::Online);
-    }
-
-    /// Sets the current activity.
-    pub fn set_activity(&self, activity: Option<ActivityData>) {
-        self.send_to_shard(ShardRunnerMessage::SetPresence {
-            activity: Some(activity),
-            status: None,
-        });
-    }
-
-    /// Sets the current user's presence, providing all fields to be passed.
-    pub fn set_presence(&self, activity: Option<ActivityData>, mut status: OnlineStatus) {
-        if status == OnlineStatus::Offline {
-            status = OnlineStatus::Invisible;
-        }
-
-        self.send_to_shard(ShardRunnerMessage::SetPresence {
-            activity: Some(activity),
-            status: Some(status),
-        });
     }
 
     /// Requests that one or multiple [`Guild`]s be chunked.

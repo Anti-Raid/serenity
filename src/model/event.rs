@@ -14,7 +14,7 @@ use crate::model::prelude::*;
 /// Requires no gateway intents.
 ///
 /// [Discord docs](https://discord.com/developers/docs/topics/gateway-events#ready).
-#[cfg_attr(feature = "typesize", derive(typesize::derive::TypeSize))]
+
 #[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(transparent)]
 #[non_exhaustive]
@@ -25,13 +25,13 @@ pub struct ReadyEvent {
 /// Requires no gateway intents.
 ///
 /// [Discord docs](https://discord.com/developers/docs/topics/gateway-events#resumed).
-#[cfg_attr(feature = "typesize", derive(typesize::derive::TypeSize))]
+
 #[derive(Clone, Debug, Deserialize, Serialize)]
 #[non_exhaustive]
 pub struct ResumedEvent {}
 
 /// [Discord docs](https://discord.com/developers/docs/topics/gateway-events#payload-structure).
-#[cfg_attr(feature = "typesize", derive(typesize::derive::TypeSize))]
+
 #[derive(Debug, Clone, Serialize)]
 #[non_exhaustive]
 #[serde(untagged)]
@@ -48,31 +48,25 @@ pub enum GatewayEvent {
     HeartbeatAck,
 }
 
-#[cfg_attr(feature = "typesize", derive(typesize::derive::TypeSize))]
+
 #[derive(Clone, Debug, Deserialize, Serialize)]
 #[non_exhaustive]
 pub struct IEvent {
     #[serde(rename = "t")]
     pub ty: String,
     #[serde(rename = "d")]
-    #[cfg_attr(feature = "typesize", typesize(with = raw_value_len))]
     pub data: Box<RawValue>,
     #[serde(rename = "__sandwich_edt")]
     pub sandwich_edt: Option<SandwichEventDispatchIdentifier>,
 }
 
-#[cfg_attr(feature = "typesize", derive(typesize::derive::TypeSize))]
+
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct SandwichEventDispatchIdentifier {
     #[serde[rename = "GuildID"]]
     pub guild_id: Option<GuildId>,
     #[serde(rename = "UserID")]
     pub user_id: Option<UserId>,
-}
-
-#[cfg(feature = "typesize")]
-fn raw_value_len(val: &RawValue) -> usize {
-    val.get().len()
 }
 
 // Manual impl needed to emulate integer enum tags

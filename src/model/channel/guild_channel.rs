@@ -7,7 +7,7 @@ use crate::model::prelude::*;
 /// Represents the shared fields between [`GuildChannel`] and [`GuildThread`].
 ///
 /// [Discord docs](https://discord.com/developers/docs/topics/threads#thread-fields)
-#[cfg_attr(feature = "typesize", derive(typesize::derive::TypeSize))]
+
 #[derive(Clone, Debug, Default, Deserialize, Serialize)]
 #[non_exhaustive]
 pub struct BaseGuildChannel {
@@ -34,7 +34,7 @@ pub struct BaseGuildChannel {
 /// Represents a channel in a [`Guild`], excluding thread information.
 ///
 /// [Discord docs](https://discord.com/developers/docs/resources/channel#channel-object).
-#[cfg_attr(feature = "typesize", derive(typesize::derive::TypeSize))]
+
 #[derive(Clone, Debug, Default, Deserialize, Serialize)]
 #[non_exhaustive]
 pub struct GuildChannel {
@@ -125,7 +125,7 @@ enum_number! {
     ///
     /// [Discord docs](https://discord.com/developers/docs/resources/channel#channel-object-forum-layout-types).
     #[derive(Clone, Copy, Debug, Default, Eq, Hash, Ord, PartialEq, PartialOrd, Deserialize, Serialize)]
-    #[cfg_attr(feature = "typesize", derive(typesize::derive::TypeSize))]
+    
     #[non_exhaustive]
     pub enum ForumLayoutType {
         /// No default has been set for forum channel.

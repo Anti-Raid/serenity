@@ -22,7 +22,6 @@
 mod client;
 mod error;
 mod multipart;
-mod ratelimiting;
 mod request;
 mod routing;
 mod typing;
@@ -35,7 +34,6 @@ pub use reqwest::StatusCode;
 pub use self::client::*;
 pub use self::error::*;
 pub use self::multipart::*;
-pub use self::ratelimiting::*;
 pub use self::request::*;
 pub use self::routing::*;
 pub use self::typing::*;

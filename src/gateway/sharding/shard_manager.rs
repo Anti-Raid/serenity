@@ -20,14 +20,14 @@ use super::{
     ShardRunnerMessage,
     ShardRunnerOptions,
 };
+use crate::all::Token;
 #[cfg(feature = "voice")]
 use crate::gateway::VoiceGatewayManager;
 use crate::gateway::client::EventHandler;
-use crate::gateway::{ConnectionStage, GatewayError, PresenceData, TransportCompression};
+use crate::gateway::{ConnectionStage, GatewayError, PresenceData};
 use crate::http::Http;
 use crate::internal::prelude::*;
 use crate::internal::tokio::spawn_named;
-use crate::model::gateway::GatewayIntents;
 
 /// The default time to wait between starting each shard or set of shards.
 pub const DEFAULT_WAIT_BETWEEN_SHARD_START: Duration = Duration::from_secs(5);
@@ -62,14 +62,11 @@ pub struct ShardManager {
     pub voice_manager: Option<Arc<dyn VoiceGatewayManager + 'static>>,
     /// A copy of the URL to use to connect to the gateway.
     pub ws_url: Arc<str>,
-    /// The compression method to use for the WebSocket connection.
-    pub compression: TransportCompression,
     /// The total amount of shards to start.
     pub shard_total: NonZeroU16,
     /// Number of seconds to wait between each start.
     pub wait_time_between_shard_start: Duration,
     pub http: Arc<Http>,
-    pub intents: GatewayIntents,
     pub presence: Option<PresenceData>,
 }
 
@@ -91,10 +88,8 @@ impl ShardManager {
             #[cfg(feature = "voice")]
             voice_manager: opt.voice_manager,
             ws_url: opt.ws_url,
-            compression: opt.compression,
             shard_total: opt.shard_total,
             http: opt.http,
-            intents: opt.intents,
             presence: opt.presence,
             wait_time_between_shard_start: opt.wait_time_between_shard_start,
         }
@@ -212,9 +207,7 @@ impl ShardManager {
             Arc::clone(&self.ws_url),
             self.token.clone(),
             shard_info,
-            self.intents,
             self.presence.clone(),
-            self.compression,
         )
         .await?;
 
@@ -242,12 +235,6 @@ impl ShardManager {
         spawn_named("shard_runner::run", async move { runner.run().await });
 
         Ok(())
-    }
-
-    /// Returns the gateway intents used for this gateway connection.
-    #[must_use]
-    pub fn intents(&self) -> GatewayIntents {
-        self.intents
     }
 }
 
@@ -277,12 +264,10 @@ pub struct ShardManagerOptions {
     #[cfg(feature = "voice")]
     pub voice_manager: Option<Arc<dyn VoiceGatewayManager>>,
     pub ws_url: Arc<str>,
-    pub compression: TransportCompression,
     pub shard_total: NonZeroU16,
     pub max_concurrency: NonZeroU16,
     pub wait_time_between_shard_start: Duration,
     pub http: Arc<Http>,
-    pub intents: GatewayIntents,
     pub presence: Option<PresenceData>,
 }
 

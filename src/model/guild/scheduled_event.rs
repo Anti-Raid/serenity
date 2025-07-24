@@ -5,7 +5,7 @@ use crate::model::prelude::*;
 /// Information about a guild scheduled event.
 ///
 /// [Discord docs](https://discord.com/developers/docs/resources/guild-scheduled-event#guild-scheduled-event-object).
-#[cfg_attr(feature = "typesize", derive(typesize::derive::TypeSize))]
+
 #[derive(Clone, Debug, Deserialize, Serialize)]
 #[non_exhaustive]
 pub struct ScheduledEvent {
@@ -64,7 +64,7 @@ impl extract_map::ExtractKey<ScheduledEventId> for ScheduledEvent {
 enum_number! {
     /// [Discord docs](https://discord.com/developers/docs/resources/guild-scheduled-event#guild-scheduled-event-object-guild-scheduled-event-status).
     #[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd, Deserialize, Serialize)]
-    #[cfg_attr(feature = "typesize", derive(typesize::derive::TypeSize))]
+    
     #[non_exhaustive]
     pub enum ScheduledEventStatus {
         Scheduled = 1,
@@ -78,7 +78,7 @@ enum_number! {
 enum_number! {
     /// [Discord docs](https://discord.com/developers/docs/resources/guild-scheduled-event#guild-scheduled-event-object-guild-scheduled-event-entity-types).
     #[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd, Deserialize, Serialize)]
-    #[cfg_attr(feature = "typesize", derive(typesize::derive::TypeSize))]
+    
     #[non_exhaustive]
     pub enum ScheduledEventType {
         StageInstance = 1,
@@ -89,7 +89,7 @@ enum_number! {
 }
 
 /// [Discord docs](https://discord.com/developers/docs/resources/guild-scheduled-event#guild-scheduled-event-object-guild-scheduled-event-entity-metadata).
-#[cfg_attr(feature = "typesize", derive(typesize::derive::TypeSize))]
+
 #[derive(Clone, Debug, Deserialize, Serialize)]
 #[non_exhaustive]
 pub struct ScheduledEventMetadata {
@@ -98,7 +98,7 @@ pub struct ScheduledEventMetadata {
 }
 
 /// [Discord docs](https://discord.com/developers/docs/resources/guild-scheduled-event#guild-scheduled-event-user-object).
-#[cfg_attr(feature = "typesize", derive(typesize::derive::TypeSize))]
+
 #[derive(Clone, Debug, Deserialize, Serialize)]
 #[non_exhaustive]
 pub struct ScheduledEventUser {
@@ -113,7 +113,7 @@ enum_number! {
     ///
     /// [Discord docs](https://discord.com/developers/docs/resources/guild-scheduled-event#guild-scheduled-event-object-guild-scheduled-event-privacy-level).
     #[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd, Deserialize, Serialize)]
-    #[cfg_attr(feature = "typesize", derive(typesize::derive::TypeSize))]
+    
     #[non_exhaustive]
     pub enum ScheduledEventPrivacyLevel {
         GuildOnly = 2,

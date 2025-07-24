@@ -1,7 +1,6 @@
 use crate::model::prelude::*;
 
 /// Represents the shared fields between a [`InteractionChannel`] and a [`InteractionGuildThread`].
-#[cfg_attr(feature = "typesize", derive(typesize::derive::TypeSize))]
 #[derive(Clone, Debug, Deserialize, Serialize)]
 #[non_exhaustive]
 pub struct BaseInteractionChannel {
@@ -18,7 +17,6 @@ pub struct BaseInteractionChannel {
 ///
 /// [Discord docs](https://discord.com/developers/docs/resources/channel#channel-object),
 /// [subset specification](https://discord.com/developers/docs/interactions/receiving-and-responding#interaction-object-resolved-data-structure).
-#[cfg_attr(feature = "typesize", derive(typesize::derive::TypeSize))]
 #[derive(Clone, Debug, Deserialize, Serialize)]
 #[non_exhaustive]
 pub struct InteractionChannel {
@@ -33,7 +31,6 @@ pub struct InteractionChannel {
 ///
 /// [Discord docs](https://discord.com/developers/docs/resources/channel#channel-object),
 /// [subset specification](https://discord.com/developers/docs/interactions/receiving-and-responding#interaction-object-resolved-data-structure).
-#[cfg_attr(feature = "typesize", derive(typesize::derive::TypeSize))]
 #[derive(Clone, Debug, Deserialize, Serialize)]
 #[non_exhaustive]
 pub struct InteractionGuildThread {
@@ -50,7 +47,6 @@ pub struct InteractionGuildThread {
     pub parent_id: ChannelId,
 }
 
-#[cfg_attr(feature = "typesize", derive(typesize::derive::TypeSize))]
 #[derive(Clone, Debug, Serialize)]
 #[serde(untagged)]
 pub enum GenericInteractionChannel {

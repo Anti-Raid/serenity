@@ -47,15 +47,13 @@ use super::{
     PresenceData,
     ShardManager,
     ShardManagerOptions,
-    TransportCompression,
 };
 use crate::http::Http;
 use crate::internal::prelude::*;
-use crate::internal::tokio::spawn_named;
-use crate::model::gateway::GatewayIntents;
 #[cfg(feature = "voice")]
 use crate::model::id::UserId;
 use crate::model::user::OnlineStatus;
+use crate::all::Token;
 
 /// A builder implementing [`IntoFuture`] building a [`Client`] to interact with Discord.
 #[must_use = "Builders do nothing unless they are awaited"]
@@ -63,36 +61,32 @@ pub struct ClientBuilder {
     token: Token,
     data: Option<Arc<dyn std::any::Any + Send + Sync>>,
     http: Arc<Http>,
-    intents: GatewayIntents,
     #[cfg(feature = "voice")]
     voice_manager: Option<Arc<dyn VoiceGatewayManager>>,
     event_handler: Option<Arc<dyn EventHandler>>,
     presence: PresenceData,
     wait_time_between_shard_start: Duration,
-    compression: TransportCompression,
 }
 
 impl ClientBuilder {
     /// Construct a new builder to call methods on for the client construction. The `token` will
     /// automatically be prefixed "Bot " if not already.
-    pub fn new(token: Token, intents: GatewayIntents) -> Self {
-        Self::new_with_http(token.clone(), Arc::new(Http::new(token)), intents)
+    pub fn new(token: Token) -> Self {
+        Self::new_with_http(token.clone(), Arc::new(Http::new(token)))
     }
 
     /// Construct a new builder with a [`Http`] instance to calls methods on for the client
     /// construction.
-    pub fn new_with_http(token: Token, http: Arc<Http>, intents: GatewayIntents) -> Self {
+    pub fn new_with_http(token: Token, http: Arc<Http>) -> Self {
         Self {
             token,
             http,
-            intents,
             data: None,
             #[cfg(feature = "voice")]
             voice_manager: None,
             event_handler: None,
             presence: PresenceData::default(),
             wait_time_between_shard_start: DEFAULT_WAIT_BETWEEN_SHARD_START,
-            compression: TransportCompression::None,
         }
     }
 
@@ -115,12 +109,6 @@ impl ClientBuilder {
         self
     }
 
-    /// Sets the compression method to be used when receiving data from the gateway.
-    pub fn compression(mut self, compression: TransportCompression) -> Self {
-        self.compression = compression;
-        self
-    }
-
     /// Sets the voice gateway handler to be used. It will receive voice events sent over the
     /// gateway and then consider - based on its settings - whether to dispatch a command.
     #[cfg(feature = "voice")]
@@ -137,38 +125,6 @@ impl ClientBuilder {
     #[must_use]
     pub fn get_voice_manager(&self) -> Option<Arc<dyn VoiceGatewayManager>> {
         self.voice_manager.clone()
-    }
-
-    /// Sets all intents directly, replacing already set intents. Intents are a bitflag, you can
-    /// combine them by performing the `|`-operator.
-    ///
-    /// # What are Intents
-    ///
-    /// A [gateway intent] sets the types of gateway events (e.g. member joins, guild integrations,
-    /// guild emoji updates, ...) the bot shall receive. Carefully picking the needed intents
-    /// greatly helps the bot to scale, as less intents will result in less events to be received
-    /// hence less processed by the bot.
-    ///
-    /// # Privileged Intents
-    ///
-    /// The intents [`GatewayIntents::GUILD_PRESENCES`], [`GatewayIntents::GUILD_MEMBERS`] and
-    /// [`GatewayIntents::MESSAGE_CONTENT`] are *privileged*. [Privileged intents] need to be
-    /// enabled in the *developer portal*. Once the bot is in 100 guilds or more, [the bot must be
-    /// verified] in order to use privileged intents.
-    ///
-    /// [gateway intent]: https://discord.com/developers/docs/topics/gateway#privileged-intents
-    /// [Privileged intents]: https://discord.com/developers/docs/topics/gateway#privileged-intents
-    /// [the bot must be verified]: https://support.discord.com/hc/en-us/articles/360040720412-Bot-Verification-and-Data-Whitelisting
-    pub fn intents(mut self, intents: GatewayIntents) -> Self {
-        self.intents = intents;
-
-        self
-    }
-
-    /// Gets the intents. See [`Self::intents`] for more info.
-    #[must_use]
-    pub fn get_intents(&self) -> GatewayIntents {
-        self.intents
     }
 
     /// Adds an event handler with multiple methods for each possible event.
@@ -214,21 +170,8 @@ impl IntoFuture for ClientBuilder {
 
     fn into_future(self) -> Self::IntoFuture {
         let data = self.data.unwrap_or(Arc::new(()));
-        let intents = self.intents;
         let presence = self.presence;
         let http = self.http;
-
-        if let Some(ratelimiter) = &http.ratelimiter
-            && let Some(event_handler) = &self.event_handler
-        {
-            let event_handler = Arc::clone(event_handler);
-            ratelimiter.set_ratelimit_callback(Box::new(move |info| {
-                let event_handler = Arc::clone(&event_handler);
-                spawn_named("ratelimit::dispatch", async move {
-                    event_handler.ratelimit(info).await;
-                });
-            }));
-        }
 
         Box::pin(async move {
             let (ws_url, shard_total, max_concurrency) = match http.get_bot_gateway().await {
@@ -250,11 +193,9 @@ impl IntoFuture for ClientBuilder {
                 #[cfg(feature = "voice")]
                 voice_manager: self.voice_manager.clone(),
                 ws_url: Arc::clone(&ws_url),
-                compression: self.compression,
                 shard_total,
                 max_concurrency,
                 http: Arc::clone(&http),
-                intents,
                 presence: Some(presence),
                 wait_time_between_shard_start: self.wait_time_between_shard_start,
             });
@@ -307,8 +248,8 @@ pub struct Client {
 }
 
 impl Client {
-    pub fn builder(token: Token, intents: GatewayIntents) -> ClientBuilder {
-        ClientBuilder::new(token, intents)
+    pub fn builder(token: Token) -> ClientBuilder {
+        ClientBuilder::new(token)
     }
 
     /// Fetches the data type provided to [`ClientBuilder::data`].
@@ -348,7 +289,7 @@ impl Client {
     ///
     /// # async fn run() -> Result<(), Box<dyn Error>> {
     /// let token = Token::from_env("DISCORD_TOKEN")?;
-    /// let mut client = Client::builder(token, GatewayIntents::default()).await?;
+    /// let mut client = Client::builder(token).await?;
     ///
     /// if let Err(why) = client.start().await {
     ///     println!("Err with client: {:?}", why);
@@ -391,7 +332,7 @@ impl Client {
     ///
     /// # async fn run() -> Result<(), Box<dyn Error>> {
     /// let token = Token::from_env("DISCORD_TOKEN")?;
-    /// let mut client = Client::builder(token, GatewayIntents::default()).await?;
+    /// let mut client = Client::builder(token).await?;
     ///
     /// if let Err(why) = client.start_autosharded().await {
     ///     println!("Err with client: {:?}", why);
@@ -438,7 +379,7 @@ impl Client {
     ///
     /// # async fn run() -> Result<(), Box<dyn Error>> {
     /// let token = Token::from_env("DISCORD_TOKEN")?;
-    /// let mut client = Client::builder(token, GatewayIntents::default()).await?;
+    /// let mut client = Client::builder(token).await?;
     ///
     /// if let Err(why) = client.start_shard(3, 5).await {
     ///     println!("Err with client: {:?}", why);
@@ -457,7 +398,7 @@ impl Client {
     ///
     /// # async fn run() -> Result<(), Box<dyn Error>> {
     /// let token = Token::from_env("DISCORD_TOKEN")?;
-    /// let mut client = Client::builder(token, GatewayIntents::default()).await?;
+    /// let mut client = Client::builder(token).await?;
     ///
     /// if let Err(why) = client.start_shard(0, 1).await {
     ///     println!("Err with client: {:?}", why);
@@ -500,7 +441,7 @@ impl Client {
     ///
     /// # async fn run() -> Result<(), Box<dyn Error>> {
     /// let token = Token::from_env("DISCORD_TOKEN")?;
-    /// let mut client = Client::builder(token, GatewayIntents::default()).await?;
+    /// let mut client = Client::builder(token).await?;
     ///
     /// if let Err(why) = client.start_shards(8).await {
     ///     println!("Err with client: {:?}", why);
@@ -543,7 +484,7 @@ impl Client {
     ///
     /// # async fn run() -> Result<(), Box<dyn Error>> {
     /// let token = Token::from_env("DISCORD_TOKEN")?;
-    /// let mut client = Client::builder(token, GatewayIntents::default()).await?;
+    /// let mut client = Client::builder(token).await?;
     ///
     /// if let Err(why) = client.start_shard_range(4..7, 10).await {
     ///     println!("Err with client: {:?}", why);

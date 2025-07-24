@@ -13,7 +13,7 @@ impl ThreadId {
     }
 }
 
-#[cfg_attr(feature = "typesize", derive(typesize::derive::TypeSize))]
+
 #[derive(Clone, Debug, Default, Deserialize, Serialize)]
 #[non_exhaustive]
 pub struct GuildThread {
@@ -56,7 +56,7 @@ impl ExtractKey<ThreadId> for GuildThread {
 ///
 /// [Discord docs](https://discord.com/developers/docs/resources/channel#thread-metadata-object).
 #[bool_to_bitflags::bool_to_bitflags]
-#[cfg_attr(feature = "typesize", derive(typesize::derive::TypeSize))]
+
 #[derive(Clone, Copy, Debug, Default, serde::Deserialize, serde::Serialize)]
 #[non_exhaustive]
 pub struct ThreadMetadata {
@@ -85,7 +85,7 @@ pub struct ThreadMetadata {
 ///
 /// [Discord docs](https://discord.com/developers/docs/resources/channel#channel-object),
 /// [subset description](https://discord.com/developers/docs/topics/gateway#thread-delete)
-#[cfg_attr(feature = "typesize", derive(typesize::derive::TypeSize))]
+
 #[derive(Clone, Debug, Deserialize, Serialize)]
 #[non_exhaustive]
 pub struct PartialGuildThread {
@@ -100,7 +100,7 @@ pub struct PartialGuildThread {
     pub kind: ChannelType,
 }
 
-#[cfg_attr(feature = "typesize", derive(typesize::derive::TypeSize))]
+
 #[derive(Clone, Debug, Deserialize, Serialize)]
 #[non_exhaustive]
 pub struct PartialThreadMember {
@@ -116,7 +116,7 @@ pub struct PartialThreadMember {
 ///
 /// [Discord docs]: https://discord.com/developers/docs/resources/channel#thread-member-object,
 /// [extra fields]: https://discord.com/developers/docs/topics/gateway-events#thread-member-update-thread-member-update-event-extra-fields
-#[cfg_attr(feature = "typesize", derive(typesize::derive::TypeSize))]
+
 #[derive(Clone, Debug, Deserialize, Serialize)]
 #[non_exhaustive]
 pub struct ThreadMember {
@@ -146,7 +146,7 @@ bitflags! {
     /// Describes extra features of the message.
     ///
     /// Discord docs: flags field on [Thread Member](https://discord.com/developers/docs/resources/channel#thread-member-object).
-    #[cfg_attr(feature = "typesize", derive(typesize::derive::TypeSize))]
+    
     #[derive(Copy, Clone, Default, Debug, Eq, Hash, PartialEq)]
     pub struct ThreadMemberFlags: u64 {
         // Not documented.

@@ -20,7 +20,6 @@ use tracing::instrument;
 use tracing::{debug, warn};
 
 use super::multipart::{Multipart, MultipartUpload};
-use super::ratelimiting::Ratelimiter;
 use super::request::Request;
 use super::routing::Route;
 use super::{
@@ -31,6 +30,7 @@ use super::{
     MessagePagination,
     UserPagination,
 };
+use crate::all::Token;
 use crate::all::CreateAttachment;
 use crate::constants;
 use crate::internal::prelude::*;
@@ -73,15 +73,12 @@ where
 /// # fn run() {
 /// let http = HttpBuilder::without_token()
 ///     .proxy("http://127.0.0.1:3000")
-///     .ratelimiter_disabled(true)
 ///     .build();
 /// # }
 /// ```
 #[must_use]
 pub struct HttpBuilder {
     client: Option<Client>,
-    ratelimiter: Option<Ratelimiter>,
-    ratelimiter_disabled: bool,
     token: Option<Token>,
     proxy: Option<FixedString<u16>>,
     application_id: Option<ApplicationId>,
@@ -92,8 +89,6 @@ impl HttpBuilder {
     pub fn new(token: Token) -> Self {
         Self {
             client: None,
-            ratelimiter: None,
-            ratelimiter_disabled: false,
             token: Some(token),
             proxy: None,
             application_id: None,
@@ -107,8 +102,6 @@ impl HttpBuilder {
     pub fn without_token() -> Self {
         Self {
             client: None,
-            ratelimiter: None,
-            ratelimiter_disabled: false,
             token: None,
             proxy: None,
             application_id: None,
@@ -124,23 +117,6 @@ impl HttpBuilder {
     /// Sets the [`reqwest::Client`]. If one isn't provided, a default one will be used.
     pub fn client(mut self, client: Client) -> Self {
         self.client = Some(client);
-        self
-    }
-
-    /// Sets the ratelimiter to be used. If one isn't provided, a default one will be used.
-    pub fn ratelimiter(mut self, ratelimiter: Ratelimiter) -> Self {
-        self.ratelimiter = Some(ratelimiter);
-        self
-    }
-
-    /// Sets whether or not the ratelimiter is disabled. By default if this this not used, it is
-    /// enabled. In most cases, this should be used in conjunction with [`Self::proxy`].
-    ///
-    /// **Note**: You should **not** disable the ratelimiter unless you have another form of rate
-    /// limiting. Disabling the ratelimiter has the main purpose of delegating rate limiting to an
-    /// API proxy via [`Self::proxy`] instead of the current process.
-    pub fn ratelimiter_disabled(mut self, ratelimiter_disabled: bool) -> Self {
-        self.ratelimiter_disabled = ratelimiter_disabled;
         self
     }
 
@@ -186,13 +162,8 @@ impl HttpBuilder {
             builder.build().expect("Cannot build reqwest::Client")
         });
 
-        let ratelimiter = (!self.ratelimiter_disabled).then(|| {
-            self.ratelimiter.unwrap_or_else(|| Ratelimiter::new(client.clone(), self.token.clone()))
-        });
-
         Http {
             client,
-            ratelimiter,
             proxy: self.proxy,
             token: self.token,
             application_id,
@@ -222,7 +193,6 @@ fn reason_into_header(reason: &str) -> Headers {
 #[derive(Debug)]
 pub struct Http {
     pub(crate) client: Client,
-    pub ratelimiter: Option<Ratelimiter>,
     pub proxy: Option<FixedString<u16>>,
     token: Option<Token>,
     application_id: AtomicU64,
@@ -4385,9 +4355,9 @@ impl Http {
     #[cfg_attr(feature = "tracing_instrument", instrument)]
     pub async fn request(&self, req: Request<'_>) -> Result<ReqwestResponse> {
         let method = req.method.reqwest_method();
-        let response = if let Some(ratelimiter) = &self.ratelimiter {
-            ratelimiter.perform(&req).await?
-        } else {
+        
+
+        let response = {
             let request = req
                 .build(
                     &self.client,
@@ -4397,7 +4367,7 @@ impl Http {
                 .await?
                 .build()?;
             self.client.execute(request).await?
-        };
+        }; 
 
         if response.status().is_success() {
             Ok(response)

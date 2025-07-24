@@ -28,7 +28,7 @@ pub struct VoiceRegion {
 ///
 /// [Discord docs](https://discord.com/developers/docs/resources/voice#voice-state-object).
 #[bool_to_bitflags::bool_to_bitflags]
-#[cfg_attr(feature = "typesize", derive(typesize::derive::TypeSize))]
+
 #[derive(Clone, Debug, serde::Deserialize, serde::Serialize)]
 #[serde(remote = "Self")]
 #[non_exhaustive]

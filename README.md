@@ -66,13 +66,8 @@ impl EventHandler for Handler {
 async fn main() {
     // Login with a bot token from the environment
     let token = env::var("DISCORD_TOKEN").expect("Expected a token in the environment");
-    // Set gateway intents, which decides what events the bot will be notified about
-    let intents = GatewayIntents::GUILD_MESSAGES
-        | GatewayIntents::DIRECT_MESSAGES
-        | GatewayIntents::MESSAGE_CONTENT;
-
     // Create a new instance of the Client, logging in as a bot.
-    let mut client = Client::builder(&token, intents)
+    let mut client = Client::builder(&token)
         .event_handler(Handler)
         .await
         .expect("Error creating client");
@@ -139,15 +134,8 @@ If you are unsure which to pick, use the default features by not setting `defaul
 
 The following is a full list of features:
 
-- **builder**: The builders used in conjunction with models' methods.
-- **cache**: The cache will store information about guilds, channels, users, and
-other data, to avoid performing REST requests. If you are low on RAM, do not
-enable this.
-- **collector**: A collector awaits events, such as receiving a message from a user or reactions on a message, and allows for responding to the events in a convenient fashion. Collectors can be configured to enforce certain criteria the events must meet.
 - **client**: A manager for shards and event handlers, abstracting away the
 work of handling shard events and updating the cache, if enabled.
-- **framework**: Enables the framework, which is a utility to allow simple
-command parsing, before/after command execution, prefix setting, and more.
 - **gateway**: A Shard, used as a higher-level interface for communicating with
 the Discord gateway over a WebSocket client.
 - **http**: Functions providing a wrapper over Discord's REST API at a low
@@ -161,9 +149,7 @@ the HTTP functions.
 instead of `rustls_backend`.
 - **tokio_task_builder**: Enables tokio's `tracing` feature and uses `tokio::task::Builder` to spawn tasks with names if `RUSTFLAGS="--cfg tokio_unstable"` is set.
 - **unstable**: Enables features of the Serenity and Discord API that do not have a stable interface. The features might not have official documentation and are subject to change without a breaking version bump.
-- **temp_cache**: Enables temporary caching in functions that retrieve data via the HTTP API.
 - **chrono**: Uses the `chrono` crate to represent timestamps. If disabled, the `time` crate is used instead.
-- **interactions_endpoint**: Enables tools related to Discord's Interactions Endpoint URL feature
 
 To enable all parts of the codebase, use the **"full"** feature.
 

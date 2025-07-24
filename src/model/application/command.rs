@@ -9,7 +9,7 @@ use crate::model::prelude::*;
 ///
 /// [Discord docs](https://discord.com/developers/docs/interactions/application-commands#application-command-object-application-command-structure).
 #[bool_to_bitflags::bool_to_bitflags]
-#[cfg_attr(feature = "typesize", derive(typesize::derive::TypeSize))]
+
 #[derive(Clone, Debug, serde::Deserialize, serde::Serialize)]
 #[non_exhaustive]
 pub struct Command {
@@ -88,7 +88,7 @@ enum_number! {
     ///
     /// [Discord docs](https://discord.com/developers/docs/interactions/application-commands#application-command-object-application-command-types).
     #[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd, Deserialize, Serialize)]
-    #[cfg_attr(feature = "typesize", derive(typesize::derive::TypeSize))]
+    
     #[non_exhaustive]
     pub enum CommandType {
         ChatInput = 1,
@@ -105,7 +105,7 @@ enum_number! {
     /// [`PrimaryEntryPoint`]: CommandType::PrimaryEntryPoint
     /// [Discord docs](https://discord.com/developers/docs/interactions/application-commands#application-command-object-entry-point-command-handler-types)
     #[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd, Deserialize, Serialize)]
-    #[cfg_attr(feature = "typesize", derive(typesize::derive::TypeSize))]
+    
     #[non_exhaustive]
     pub enum EntryPointHandlerType {
         AppHandler = 1,
@@ -117,7 +117,7 @@ enum_number! {
 /// The parameters for an [`Command`].
 ///
 /// [Discord docs](https://discord.com/developers/docs/interactions/application-commands#application-command-object-application-command-option-structure).
-#[cfg_attr(feature = "typesize", derive(typesize::derive::TypeSize))]
+
 #[derive(Clone, Debug, serde::Deserialize, serde::Serialize)]
 #[non_exhaustive]
 pub struct CommandOption {
@@ -179,7 +179,7 @@ enum_number! {
     ///
     /// [Discord docs](https://discord.com/developers/docs/interactions/application-commands#application-command-object-application-command-option-type).
     #[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd, Deserialize, Serialize)]
-    #[cfg_attr(feature = "typesize", derive(typesize::derive::TypeSize))]
+    
     #[non_exhaustive]
     pub enum CommandOptionType {
         SubCommand = 1,
@@ -200,7 +200,7 @@ enum_number! {
 /// The only valid values a user can pick in an [`CommandOption`].
 ///
 /// [Discord docs](https://discord.com/developers/docs/interactions/application-commands#application-command-object-application-command-option-choice-structure).
-#[cfg_attr(feature = "typesize", derive(typesize::derive::TypeSize))]
+
 #[derive(Clone, Debug, Deserialize, Serialize)]
 #[non_exhaustive]
 pub struct CommandOptionChoice {
@@ -216,7 +216,7 @@ pub struct CommandOptionChoice {
 /// An [`Command`] permission.
 ///
 /// [Discord docs](https://discord.com/developers/docs/interactions/application-commands#application-command-permissions-object-guild-application-command-permissions-structure).
-#[cfg_attr(feature = "typesize", derive(typesize::derive::TypeSize))]
+
 #[derive(Clone, Debug, Deserialize, Serialize)]
 #[non_exhaustive]
 pub struct CommandPermissions {
@@ -233,7 +233,7 @@ pub struct CommandPermissions {
 /// The [`CommandPermission`] data.
 ///
 /// [Discord docs](https://discord.com/developers/docs/interactions/application-commands#application-command-permissions-object-application-command-permissions-structure).
-#[cfg_attr(feature = "typesize", derive(typesize::derive::TypeSize))]
+
 #[derive(Clone, Debug, Deserialize, Serialize)]
 #[non_exhaustive]
 pub struct CommandPermission {
@@ -251,7 +251,7 @@ enum_number! {
     ///
     /// [Discord docs](https://discord.com/developers/docs/interactions/application-commands#application-command-permissions-object-application-command-permission-type).
     #[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd, Deserialize, Serialize)]
-    #[cfg_attr(feature = "typesize", derive(typesize::derive::TypeSize))]
+    
     #[non_exhaustive]
     pub enum CommandPermissionType {
         Role = 1,

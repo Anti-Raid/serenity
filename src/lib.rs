@@ -93,8 +93,6 @@ pub mod prelude;
 pub mod gateway;
 #[cfg(feature = "http")]
 pub mod http;
-#[cfg(feature = "interactions_endpoint")]
-pub mod interactions_endpoint;
 pub mod secrets;
 #[cfg(feature = "utils")]
 pub mod utils;
@@ -118,9 +116,6 @@ pub mod all {
     #[cfg(feature = "http")]
     #[doc(no_inline)]
     pub use crate::http::*;
-    #[cfg(feature = "interactions_endpoint")]
-    #[doc(no_inline)]
-    pub use crate::interactions_endpoint::*;
     #[doc(no_inline)]
     pub use crate::secrets::*;
     #[cfg(feature = "utils")]

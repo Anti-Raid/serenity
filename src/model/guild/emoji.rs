@@ -8,7 +8,7 @@ use crate::model::utils::default_true;
 ///
 /// [Discord docs](https://discord.com/developers/docs/resources/emoji#emoji-object).
 #[bool_to_bitflags::bool_to_bitflags]
-#[cfg_attr(feature = "typesize", derive(typesize::derive::TypeSize))]
+
 #[derive(Clone, Debug, serde::Deserialize, serde::Serialize)]
 #[non_exhaustive]
 pub struct Emoji {

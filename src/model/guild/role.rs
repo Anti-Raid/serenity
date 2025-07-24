@@ -12,7 +12,7 @@ use crate::model::utils::is_false;
 ///
 /// [Discord docs](https://discord.com/developers/docs/topics/permissions#role-object).
 #[bool_to_bitflags::bool_to_bitflags]
-#[cfg_attr(feature = "typesize", derive(typesize::derive::TypeSize))]
+
 #[derive(Clone, Debug, Default, PartialEq, Eq, serde::Deserialize, serde::Serialize)]
 #[non_exhaustive]
 pub struct Role {
@@ -146,7 +146,7 @@ impl From<&Role> for RoleId {
 /// [Discord docs](https://discord.com/developers/docs/topics/permissions#role-object-role-tags-structure).
 #[bool_to_bitflags::bool_to_bitflags]
 #[derive(Clone, Debug, Default, Eq, PartialEq, serde::Deserialize, serde::Serialize)]
-#[cfg_attr(feature = "typesize", derive(typesize::derive::TypeSize))]
+
 #[non_exhaustive]
 pub struct RoleTags {
     /// The Id of the bot the [`Role`] belongs to.

@@ -14,7 +14,7 @@ use super::{Shard, ShardAction, ShardManagerMessage, ShardRunnerInfo};
 use crate::gateway::VoiceGatewayManager;
 use crate::gateway::client::dispatch::dispatch_model;
 use crate::gateway::client::{Context, EventHandler};
-use crate::gateway::{ActivityData, ChunkGuildFilter, GatewayError};
+use crate::gateway::{ChunkGuildFilter, GatewayError};
 use crate::http::Http;
 use crate::internal::prelude::*;
 #[cfg(feature = "voice")]
@@ -23,7 +23,6 @@ use crate::model::event::GatewayEvent;
 #[cfg(feature = "voice")]
 use crate::model::id::ChannelId;
 use crate::model::id::{GuildId, ShardId};
-use crate::model::user::OnlineStatus;
 
 /// A runner for managing a [`Shard`] and its respective WebSocket client.
 pub struct ShardRunner {
@@ -40,8 +39,6 @@ pub struct ShardRunner {
     #[cfg(feature = "voice")]
     voice_manager: Option<Arc<dyn VoiceGatewayManager + 'static>>,
     pub http: Arc<Http>,
-    #[cfg(feature = "collector")]
-    pub(crate) collectors: Arc<parking_lot::RwLock<Vec<CollectorCallback>>>,
 }
 
 impl ShardRunner {
@@ -60,8 +57,6 @@ impl ShardRunner {
             #[cfg(feature = "voice")]
             voice_manager: opt.voice_manager,
             http: opt.http,
-            #[cfg(feature = "collector")]
-            collectors: Arc::new(parking_lot::RwLock::new(vec![])),
         }
     }
 
@@ -171,9 +166,6 @@ impl ShardRunner {
                             .as_ref()
                             .is_none()
                         {
-                            #[cfg(feature = "collector")]
-                            self.collectors.write().retain(|callback| (callback.0)(&event));
-
                             dispatch_model(
                                 event,
                                 context,
@@ -274,18 +266,6 @@ impl ShardRunner {
                     self.shard
                         .chunk_guild(guild_id, limit, presences, filter, nonce.as_deref())
                         .await
-                },
-                ShardRunnerMessage::SetPresence {
-                    activity,
-                    status,
-                } => {
-                    if let Some(activity) = activity {
-                        self.shard.set_activity(activity);
-                    }
-                    if let Some(status) = status {
-                        self.shard.set_status(status);
-                    }
-                    self.shard.update_presence().await
                 },
                 #[cfg(feature = "voice")]
                 ShardRunnerMessage::UpdateVoiceState {
@@ -414,8 +394,6 @@ impl ShardRunner {
             shard_id: self.shard.shard_info().id,
             http: Arc::clone(&self.http),
             runners: Arc::clone(&self.runners),
-            #[cfg(feature = "collector")]
-            collectors: Arc::clone(&self.collectors),
         }
     }
 
@@ -470,12 +448,6 @@ pub enum ShardRunnerMessage {
         /// [`GuildMembersChunkEvent`]: crate::model::event::GuildMembersChunkEvent
         nonce: Option<String>,
     },
-    /// Indicates that the client is to update the shard's presence.
-    ///
-    /// Pass `None` to keep a value unmodified. The `activity` field is nullable, in other words
-    /// passing `Some(None)` will clear the current activity.
-    #[expect(clippy::option_option)]
-    SetPresence { activity: Option<Option<ActivityData>>, status: Option<OnlineStatus> },
     /// Indicates that the client wants to join, move, or disconnect from a voice channel.
     #[cfg(feature = "voice")]
     UpdateVoiceState {

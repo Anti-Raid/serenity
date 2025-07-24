@@ -1,5 +1,7 @@
 //! Audit log types for administrative actions within guilds.
 
+use std::collections::HashMap;
+
 use nonmax::{NonMaxU32, NonMaxU64};
 use serde::ser::{Serialize, Serializer};
 
@@ -14,7 +16,7 @@ use crate::model::prelude::*;
 /// Determines the action that was done on a target.
 ///
 /// [Discord docs](https://discord.com/developers/docs/resources/audit-log#audit-log-entry-object-audit-log-events).
-#[cfg_attr(feature = "typesize", derive(typesize::derive::TypeSize))]
+
 #[derive(Clone, Copy, Debug)]
 #[non_exhaustive]
 pub enum Action {
@@ -143,7 +145,7 @@ impl Serialize for Action {
 }
 
 /// [Discord docs](https://discord.com/developers/docs/resources/audit-log#audit-log-entry-object-audit-log-events).
-#[cfg_attr(feature = "typesize", derive(typesize::derive::TypeSize))]
+
 #[derive(Clone, Copy, Debug)]
 #[non_exhaustive]
 pub enum ChannelAction {
@@ -153,7 +155,7 @@ pub enum ChannelAction {
 }
 
 /// [Discord docs](https://discord.com/developers/docs/resources/audit-log#audit-log-entry-object-audit-log-events).
-#[cfg_attr(feature = "typesize", derive(typesize::derive::TypeSize))]
+
 #[derive(Clone, Copy, Debug)]
 #[non_exhaustive]
 pub enum ChannelOverwriteAction {
@@ -163,7 +165,7 @@ pub enum ChannelOverwriteAction {
 }
 
 /// [Discord docs](https://discord.com/developers/docs/resources/audit-log#audit-log-entry-object-audit-log-events).
-#[cfg_attr(feature = "typesize", derive(typesize::derive::TypeSize))]
+
 #[derive(Clone, Copy, Debug)]
 #[non_exhaustive]
 pub enum MemberAction {
@@ -179,7 +181,7 @@ pub enum MemberAction {
 }
 
 /// [Discord docs](https://discord.com/developers/docs/resources/audit-log#audit-log-entry-object-audit-log-events).
-#[cfg_attr(feature = "typesize", derive(typesize::derive::TypeSize))]
+
 #[derive(Clone, Copy, Debug)]
 #[non_exhaustive]
 pub enum RoleAction {
@@ -189,7 +191,7 @@ pub enum RoleAction {
 }
 
 /// [Discord docs](https://discord.com/developers/docs/resources/audit-log#audit-log-entry-object-audit-log-events).
-#[cfg_attr(feature = "typesize", derive(typesize::derive::TypeSize))]
+
 #[derive(Clone, Copy, Debug)]
 #[non_exhaustive]
 pub enum InviteAction {
@@ -199,7 +201,7 @@ pub enum InviteAction {
 }
 
 /// [Discord docs](https://discord.com/developers/docs/resources/audit-log#audit-log-entry-object-audit-log-events).
-#[cfg_attr(feature = "typesize", derive(typesize::derive::TypeSize))]
+
 #[derive(Clone, Copy, Debug)]
 #[non_exhaustive]
 pub enum WebhookAction {
@@ -209,7 +211,7 @@ pub enum WebhookAction {
 }
 
 /// [Discord docs](https://discord.com/developers/docs/resources/audit-log#audit-log-entry-object-audit-log-events).
-#[cfg_attr(feature = "typesize", derive(typesize::derive::TypeSize))]
+
 #[derive(Clone, Copy, Debug)]
 #[non_exhaustive]
 pub enum EmojiAction {
@@ -219,7 +221,7 @@ pub enum EmojiAction {
 }
 
 /// [Discord docs](https://discord.com/developers/docs/resources/audit-log#audit-log-entry-object-audit-log-events).
-#[cfg_attr(feature = "typesize", derive(typesize::derive::TypeSize))]
+
 #[derive(Clone, Copy, Debug)]
 #[non_exhaustive]
 pub enum MessageAction {
@@ -230,7 +232,7 @@ pub enum MessageAction {
 }
 
 /// [Discord docs](https://discord.com/developers/docs/resources/audit-log#audit-log-entry-object-audit-log-events).
-#[cfg_attr(feature = "typesize", derive(typesize::derive::TypeSize))]
+
 #[derive(Clone, Copy, Debug)]
 #[non_exhaustive]
 pub enum IntegrationAction {
@@ -240,7 +242,7 @@ pub enum IntegrationAction {
 }
 
 /// [Discord docs](https://discord.com/developers/docs/resources/audit-log#audit-log-entry-object-audit-log-events).
-#[cfg_attr(feature = "typesize", derive(typesize::derive::TypeSize))]
+
 #[derive(Clone, Copy, Debug)]
 #[non_exhaustive]
 pub enum StageInstanceAction {
@@ -250,7 +252,7 @@ pub enum StageInstanceAction {
 }
 
 /// [Discord docs](https://discord.com/developers/docs/resources/audit-log#audit-log-entry-object-audit-log-events).
-#[cfg_attr(feature = "typesize", derive(typesize::derive::TypeSize))]
+
 #[derive(Clone, Copy, Debug)]
 #[non_exhaustive]
 pub enum StickerAction {
@@ -260,7 +262,7 @@ pub enum StickerAction {
 }
 
 /// [Discord docs](https://discord.com/developers/docs/resources/audit-log#audit-log-entry-object-audit-log-events).
-#[cfg_attr(feature = "typesize", derive(typesize::derive::TypeSize))]
+
 #[derive(Clone, Copy, Debug)]
 #[non_exhaustive]
 pub enum ScheduledEventAction {
@@ -270,7 +272,7 @@ pub enum ScheduledEventAction {
 }
 
 /// [Discord docs](https://discord.com/developers/docs/resources/audit-log#audit-log-entry-object-audit-log-events).
-#[cfg_attr(feature = "typesize", derive(typesize::derive::TypeSize))]
+
 #[derive(Clone, Copy, Debug)]
 #[non_exhaustive]
 pub enum ThreadAction {
@@ -280,7 +282,7 @@ pub enum ThreadAction {
 }
 
 /// [Discord docs](https://discord.com/developers/docs/resources/audit-log#audit-log-entry-object-audit-log-events).
-#[cfg_attr(feature = "typesize", derive(typesize::derive::TypeSize))]
+
 #[derive(Copy, Clone, Debug)]
 #[non_exhaustive]
 pub enum AutoModAction {
@@ -293,7 +295,7 @@ pub enum AutoModAction {
 }
 
 /// [Discord docs](https://discord.com/developers/docs/resources/audit-log#audit-log-entry-object-audit-log-events).
-#[cfg_attr(feature = "typesize", derive(typesize::derive::TypeSize))]
+
 #[derive(Copy, Clone, Debug)]
 #[non_exhaustive]
 pub enum CreatorMonetizationAction {
@@ -302,7 +304,7 @@ pub enum CreatorMonetizationAction {
 }
 
 /// [Incomplete documentation](https://github.com/discord/discord-api-docs/pull/6398)
-#[cfg_attr(feature = "typesize", derive(typesize::derive::TypeSize))]
+
 #[derive(Copy, Clone, Debug)]
 #[non_exhaustive]
 pub enum VoiceChannelStatusAction {
@@ -311,7 +313,7 @@ pub enum VoiceChannelStatusAction {
 }
 
 /// [Discord docs](https://discord.com/developers/docs/resources/audit-log#audit-log-object).
-#[cfg_attr(feature = "typesize", derive(typesize::derive::TypeSize))]
+
 #[derive(Debug, Deserialize, Serialize)]
 #[non_exhaustive]
 pub struct AuditLogs {
@@ -332,15 +334,15 @@ pub struct AuditLogs {
     /// map since archived threads might not be kept in memory by clients.
     pub threads: FixedArray<GuildThread>,
     /// List of users referenced in the audit log.
-    pub users: ExtractMap<UserId, User>,
+    pub users: HashMap<UserId, User>,
     /// List of webhooks referenced in the audit log.
-    pub webhooks: ExtractMap<WebhookId, Webhook>,
+    pub webhooks: HashMap<WebhookId, Webhook>,
 }
 
 /// Partial version of [`Integration`], used in [`AuditLogs::integrations`].
 ///
 /// [Discord docs](https://discord.com/developers/docs/resources/audit-log#audit-log-object-example-partial-integration-object).
-#[cfg_attr(feature = "typesize", derive(typesize::derive::TypeSize))]
+
 #[derive(Clone, Debug, Deserialize, Serialize)]
 #[non_exhaustive]
 pub struct PartialIntegration {
@@ -353,7 +355,7 @@ pub struct PartialIntegration {
 }
 
 /// [Discord docs](https://discord.com/developers/docs/resources/audit-log#audit-log-entry-object).
-#[cfg_attr(feature = "typesize", derive(typesize::derive::TypeSize))]
+
 #[derive(Debug, Deserialize, Serialize, Clone)]
 #[non_exhaustive]
 pub struct AuditLogEntry {
@@ -376,7 +378,7 @@ pub struct AuditLogEntry {
 }
 
 /// [Discord docs](https://discord.com/developers/docs/resources/audit-log#audit-log-entry-object-optional-audit-entry-info).
-#[cfg_attr(feature = "typesize", derive(typesize::derive::TypeSize))]
+
 #[derive(Debug, Deserialize, Serialize, Clone)]
 #[non_exhaustive]
 pub struct AuditLogEntryOptions {

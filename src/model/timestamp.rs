@@ -46,7 +46,7 @@ use time::{Duration, OffsetDateTime, format_description::well_known::Rfc3339, se
 const DISCORD_EPOCH: u64 = 1_420_070_400_000;
 
 #[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd, Deserialize, Serialize)]
-#[cfg_attr(feature = "typesize", derive(typesize::derive::TypeSize))]
+
 #[serde(transparent)]
 pub struct Timestamp(
     #[cfg(feature = "chrono")] DateTime<Utc>,

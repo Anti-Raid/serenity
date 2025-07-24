@@ -13,7 +13,7 @@ use crate::model::prelude::*;
 /// [Discord docs](https://discord.com/developers/docs/resources/channel#embed-object).
 ///
 /// [slack's attachments]: https://api.slack.com/docs/message-attachments
-#[cfg_attr(feature = "typesize", derive(typesize::derive::TypeSize))]
+
 #[derive(Clone, Default, Debug, Deserialize, Serialize)]
 #[non_exhaustive]
 pub struct Embed {
@@ -74,7 +74,7 @@ pub struct Embed {
 /// An author object in an embed.
 ///
 /// [Discord docs](https://discord.com/developers/docs/resources/channel#embed-object-embed-author-structure).
-#[cfg_attr(feature = "typesize", derive(typesize::derive::TypeSize))]
+
 #[derive(Clone, Debug, Deserialize, Serialize)]
 #[non_exhaustive]
 pub struct EmbedAuthor {
@@ -96,7 +96,7 @@ pub struct EmbedAuthor {
 /// A field object in an embed.
 ///
 /// [Discord docs](https://discord.com/developers/docs/resources/channel#embed-object-embed-field-structure).
-#[cfg_attr(feature = "typesize", derive(typesize::derive::TypeSize))]
+
 #[derive(Clone, Debug, Deserialize, Serialize)]
 #[non_exhaustive]
 pub struct EmbedField {
@@ -142,7 +142,7 @@ impl EmbedField {
 /// Footer information for an embed.
 ///
 /// [Discord docs](https://discord.com/developers/docs/resources/channel#embed-object-embed-footer-structure).
-#[cfg_attr(feature = "typesize", derive(typesize::derive::TypeSize))]
+
 #[derive(Clone, Debug, Deserialize, Serialize)]
 #[non_exhaustive]
 pub struct EmbedFooter {
@@ -161,7 +161,7 @@ pub struct EmbedFooter {
 /// An image object in an embed.
 ///
 /// [Discord docs](https://discord.com/developers/docs/resources/channel#embed-object-embed-image-structure).
-#[cfg_attr(feature = "typesize", derive(typesize::derive::TypeSize))]
+
 #[derive(Clone, Debug, Deserialize, Serialize)]
 #[non_exhaustive]
 pub struct EmbedImage {
@@ -180,7 +180,7 @@ pub struct EmbedImage {
 /// The provider of an embed.
 ///
 /// [Discord docs](https://discord.com/developers/docs/resources/channel#embed-object-embed-provider-structure).
-#[cfg_attr(feature = "typesize", derive(typesize::derive::TypeSize))]
+
 #[derive(Clone, Debug, Deserialize, Serialize)]
 #[non_exhaustive]
 pub struct EmbedProvider {
@@ -193,7 +193,7 @@ pub struct EmbedProvider {
 /// The dimensions and URL of an embed thumbnail.
 ///
 /// [Discord docs](https://discord.com/developers/docs/resources/channel#embed-object-embed-thumbnail-structure).
-#[cfg_attr(feature = "typesize", derive(typesize::derive::TypeSize))]
+
 #[derive(Clone, Debug, Deserialize, Serialize)]
 #[non_exhaustive]
 pub struct EmbedThumbnail {
@@ -212,7 +212,7 @@ pub struct EmbedThumbnail {
 /// Video information for an embed.
 ///
 /// [Discord docs](https://discord.com/developers/docs/resources/channel#embed-object-embed-video-structure).
-#[cfg_attr(feature = "typesize", derive(typesize::derive::TypeSize))]
+
 #[derive(Clone, Debug, Deserialize, Serialize)]
 #[non_exhaustive]
 pub struct EmbedVideo {

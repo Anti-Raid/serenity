@@ -48,7 +48,7 @@ pub struct Ban {
 /// The response from [`GuildId::bulk_ban`].
 ///
 /// [Discord docs](https://discord.com/developers/docs/resources/guild#bulk-guild-ban).
-#[cfg_attr(feature = "typesize", derive(typesize::derive::TypeSize))]
+
 #[derive(Clone, Debug, PartialEq, Deserialize, Serialize)]
 #[non_exhaustive]
 pub struct BulkBanResponse {
@@ -58,7 +58,7 @@ pub struct BulkBanResponse {
     pub failed_users: Vec<UserId>,
 }
 
-#[cfg_attr(feature = "typesize", derive(typesize::derive::TypeSize))]
+
 #[derive(Clone, Debug, PartialEq, Deserialize, Serialize)]
 pub struct AfkMetadata {
     /// Id of a voice channel that's considered the AFK channel.
@@ -73,7 +73,7 @@ pub struct AfkMetadata {
 /// [Discord docs](https://discord.com/developers/docs/resources/guild#guild-object) plus
 /// [extension](https://discord.com/developers/docs/topics/gateway-events#guild-create).
 #[bool_to_bitflags::bool_to_bitflags]
-#[cfg_attr(feature = "typesize", derive(typesize::derive::TypeSize))]
+
 #[derive(Clone, Debug, Default, serde::Deserialize, serde::Serialize)]
 #[non_exhaustive]
 pub struct Guild {
@@ -948,7 +948,7 @@ pub struct GuildWidget {
 /// Representation of the number of members that would be pruned by a guild prune operation.
 ///
 /// [Discord docs](https://discord.com/developers/docs/resources/guild#get-guild-prune-count).
-#[cfg_attr(feature = "typesize", derive(typesize::derive::TypeSize))]
+
 #[derive(Clone, Copy, Debug, Deserialize, Serialize)]
 #[non_exhaustive]
 pub struct GuildPrune {
@@ -960,7 +960,7 @@ pub struct GuildPrune {
 ///
 /// [Discord docs](https://discord.com/developers/docs/resources/guild#guild-object),
 /// [subset example](https://discord.com/developers/docs/resources/user#get-current-user-guilds-example-partial-guild).
-#[cfg_attr(feature = "typesize", derive(typesize::derive::TypeSize))]
+
 #[derive(Clone, Debug, Deserialize, Serialize)]
 #[non_exhaustive]
 pub struct GuildInfo {
@@ -1005,7 +1005,7 @@ impl InviteGuild {
 /// Data for an unavailable guild.
 ///
 /// [Discord docs](https://discord.com/developers/docs/resources/guild#unavailable-guild-object).
-#[cfg_attr(feature = "typesize", derive(typesize::derive::TypeSize))]
+
 #[derive(Clone, Copy, Debug, Deserialize, Serialize)]
 #[non_exhaustive]
 pub struct UnavailableGuild {
@@ -1021,7 +1021,7 @@ enum_number! {
     ///
     /// [Discord docs](https://discord.com/developers/docs/resources/guild#guild-object-default-message-notification-level).
     #[derive(Clone, Copy, Debug, Default, Eq, Hash, Ord, PartialEq, PartialOrd, Deserialize, Serialize)]
-    #[cfg_attr(feature = "typesize", derive(typesize::derive::TypeSize))]
+    
     #[non_exhaustive]
     pub enum DefaultMessageNotificationLevel {
         /// Receive notifications for everything.
@@ -1037,7 +1037,7 @@ enum_number! {
     ///
     /// [Discord docs](https://discord.com/developers/docs/resources/guild#guild-object-explicit-content-filter-level).
     #[derive(Clone, Copy, Debug, Default, Eq, Hash, Ord, PartialEq, PartialOrd, Deserialize, Serialize)]
-    #[cfg_attr(feature = "typesize", derive(typesize::derive::TypeSize))]
+    
     #[non_exhaustive]
     pub enum ExplicitContentFilter {
         /// Don't scan any messages.
@@ -1055,7 +1055,7 @@ enum_number! {
     ///
     /// [Discord docs](https://discord.com/developers/docs/resources/guild#guild-object-mfa-level).
     #[derive(Clone, Copy, Debug, Default, Eq, Hash, Ord, PartialEq, PartialOrd, Deserialize, Serialize)]
-    #[cfg_attr(feature = "typesize", derive(typesize::derive::TypeSize))]
+    
     #[non_exhaustive]
     pub enum MfaLevel {
         /// MFA is disabled.
@@ -1072,7 +1072,7 @@ enum_number! {
     ///
     /// [Discord docs](https://discord.com/developers/docs/resources/guild#guild-object-verification-level).
     #[derive(Clone, Copy, Debug, Default, Eq, Hash, Ord, PartialEq, PartialOrd, Deserialize, Serialize)]
-    #[cfg_attr(feature = "typesize", derive(typesize::derive::TypeSize))]
+    
     #[non_exhaustive]
     pub enum VerificationLevel {
         /// Does not require any verification.
@@ -1094,7 +1094,7 @@ enum_number! {
     ///
     /// [Discord docs](https://discord.com/developers/docs/resources/guild#guild-object-guild-nsfw-level).
     #[derive(Clone, Copy, Debug, Default, Eq, Hash, Ord, PartialEq, PartialOrd, Deserialize, Serialize)]
-    #[cfg_attr(feature = "typesize", derive(typesize::derive::TypeSize))]
+    
     #[non_exhaustive]
     pub enum NsfwLevel {
         /// The nsfw level is not specified.
@@ -1114,7 +1114,7 @@ enum_number! {
     ///
     /// See [AfkMetadata::afk_timeout].
     #[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd, Deserialize, Serialize)]
-    #[cfg_attr(feature = "typesize", derive(typesize::derive::TypeSize))]
+    
     #[non_exhaustive]
     pub enum AfkTimeout {
         OneMinute = 60,

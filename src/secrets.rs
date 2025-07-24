@@ -31,23 +31,8 @@ impl std::fmt::Debug for SecretString {
     }
 }
 
-impl zeroize::Zeroize for SecretString {
-    fn zeroize(&mut self) {
-        if let Some(string) = Arc::get_mut(&mut self.0) {
-            string.zeroize();
-        }
-    }
-}
-
-#[cfg(feature = "typesize")]
-impl typesize::TypeSize for SecretString {
-    fn extra_size(&self) -> usize {
-        self.0.len() + (size_of::<usize>() * 2)
-    }
-}
-
 /// A type for securely storing and passing around a Discord token.
-#[cfg_attr(feature = "typesize", derive(typesize::derive::TypeSize))]
+
 #[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(try_from = "String")]
 pub struct Token(SecretString);

@@ -112,7 +112,7 @@ pub(crate) mod discriminator {
 /// Information about the current user.
 ///
 /// [Discord docs](https://discord.com/developers/docs/resources/user#user-object).
-#[cfg_attr(feature = "typesize", derive(typesize::derive::TypeSize))]
+
 #[derive(Clone, Debug, Default, Deserialize, Serialize)]
 #[serde(transparent)]
 pub struct CurrentUser(User);
@@ -140,7 +140,7 @@ impl From<CurrentUser> for User {
 /// The representation of a user's status.
 ///
 /// [Discord docs](https://discord.com/developers/docs/topics/gateway-events#update-presence-status-types).
-#[cfg_attr(feature = "typesize", derive(typesize::derive::TypeSize))]
+
 #[derive(
     Clone, Copy, Debug, Default, Eq, Hash, Ord, PartialEq, PartialOrd, Deserialize, Serialize,
 )]
@@ -177,7 +177,7 @@ impl OnlineStatus {
 /// [Discord docs](https://discord.com/developers/docs/resources/user#user-object), existence of
 /// additional partial member field documented [here](https://discord.com/developers/docs/topics/gateway-events#message-create).
 #[bool_to_bitflags::bool_to_bitflags]
-#[cfg_attr(feature = "typesize", derive(typesize::derive::TypeSize))]
+
 #[derive(Clone, Debug, Default, PartialEq, Eq, Hash, serde::Deserialize, serde::Serialize)]
 #[non_exhaustive]
 pub struct User {
@@ -256,7 +256,7 @@ enum_number! {
     ///
     /// [Discord docs](https://discord.com/developers/docs/resources/user#user-object-premium-types).
     #[derive(Clone, Copy, Debug, Default, Eq, Hash, Ord, PartialEq, PartialOrd, Deserialize, Serialize)]
-    #[cfg_attr(feature = "typesize", derive(typesize::derive::TypeSize))]
+    
     #[non_exhaustive]
     pub enum PremiumType {
         None = 0,
@@ -271,7 +271,7 @@ bitflags! {
     /// User's public flags
     ///
     /// [Discord docs](https://discord.com/developers/docs/resources/user#user-object-user-flags).
-    #[cfg_attr(feature = "typesize", derive(typesize::derive::TypeSize))]
+    
     #[derive(Copy, Clone, Default, Debug, Eq, Hash, PartialEq)]
     pub struct UserPublicFlags: u32 {
         /// User's flag as discord employee

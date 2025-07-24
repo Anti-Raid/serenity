@@ -36,9 +36,7 @@ use std::fmt;
 use std::sync::Arc;
 use std::time::{Duration as StdDuration, Instant};
 
-#[cfg(any(feature = "transport_compression_zlib", feature = "transport_compression_zstd"))]
-use aformat::aformat_into;
-use aformat::{ArrayString, CapStr, aformat};
+use aformat::{CapStr, aformat};
 use tokio_tungstenite::tungstenite::error::Error as TungsteniteError;
 use tokio_tungstenite::tungstenite::protocol::frame::CloseFrame;
 #[cfg(feature = "tracing_instrument")]
@@ -55,11 +53,11 @@ pub use self::shard_manager::{
 pub use self::shard_queue::ShardQueue;
 pub use self::shard_runner::{ShardRunner, ShardRunnerMessage, ShardRunnerOptions};
 use super::{ActivityData, ChunkGuildFilter, GatewayError, PresenceData, WsClient};
-use crate::all::{IEvent, ReadyEvent};
+use crate::all::{IEvent, ReadyEvent, Token};
 use crate::constants::{self, CloseCode};
 use crate::internal::prelude::*;
 use crate::model::event::GatewayEvent;
-use crate::model::gateway::{GatewayIntents, ShardInfo};
+use crate::model::gateway::ShardInfo;
 #[cfg(feature = "voice")]
 use crate::model::id::ChannelId;
 use crate::model::id::{ApplicationId, GuildId, ShardId};
@@ -111,8 +109,6 @@ pub struct Shard {
     token: Token,
     ws_url: Arc<str>,
     resume_metadata: Option<ResumeMetadata>,
-    compression: TransportCompression,
-    pub intents: GatewayIntents,
 }
 
 impl Shard {
@@ -128,8 +124,8 @@ impl Shard {
     /// use std::num::NonZeroU16;
     /// use std::sync::Arc;
     ///
-    /// use serenity::gateway::{Shard, TransportCompression};
-    /// use serenity::model::gateway::{GatewayIntents, ShardInfo};
+    /// use serenity::gateway::Shard;
+    /// use serenity::model::gateway::ShardInfo;
     /// use serenity::model::id::ShardId;
     /// use serenity::secrets::Token;
     /// use tokio::sync::Mutex;
@@ -150,9 +146,7 @@ impl Shard {
     ///     gateway,
     ///     token,
     ///     shard_info,
-    ///     GatewayIntents::all(),
     ///     None,
-    ///     TransportCompression::None,
     /// )
     /// .await?;
     ///
@@ -170,11 +164,9 @@ impl Shard {
         ws_url: Arc<str>,
         token: Token,
         info: ShardInfo,
-        intents: GatewayIntents,
         presence: Option<PresenceData>,
-        compression: TransportCompression,
     ) -> Result<Shard> {
-        let client = connect(&ws_url, compression).await?;
+        let client = connect(&ws_url).await?;
 
         let presence = presence.unwrap_or_default();
         let last_heartbeat_sent = None;
@@ -199,8 +191,6 @@ impl Shard {
             info,
             ws_url,
             resume_metadata: None,
-            compression,
-            intents,
         })
     }
 
@@ -611,7 +601,7 @@ impl Shard {
     #[cfg_attr(feature = "tracing_instrument", instrument(skip(self)))]
     pub async fn identify(&mut self) -> Result<()> {
         self.client
-            .send_identify(&self.info, self.token.expose_secret(), self.intents, &self.presence)
+            .send_identify(&self.info, self.token.expose_secret())
             .await?;
 
         self.last_heartbeat_sent = Some(Instant::now());
@@ -646,7 +636,7 @@ impl Shard {
         // Hello is received.
         self.stage = ConnectionStage::Connecting;
         self.started = Instant::now();
-        let client = connect(ws_url, self.compression).await?;
+        let client = connect(ws_url).await?;
         self.stage = ConnectionStage::Handshake;
 
         Ok(client)
@@ -670,29 +660,20 @@ impl Shard {
             Err(Error::Gateway(GatewayError::NoSessionId))
         }
     }
-
-    /// # Errors
-    ///
-    /// Errors if there is a problem with the WS connection.
-    #[cfg_attr(feature = "tracing_instrument", instrument(skip(self)))]
-    pub async fn update_presence(&mut self) -> Result<()> {
-        self.client.send_presence_update(&self.info, &self.presence).await
-    }
 }
 
-async fn connect(base_url: &str, compression: TransportCompression) -> Result<WsClient> {
+async fn connect(base_url: &str) -> Result<WsClient> {
     let url = Url::parse(&aformat!(
-        "{}?v={}{}",
+        "{}?v={}",
         CapStr::<64>(base_url),
         constants::GATEWAY_VERSION,
-        compression.query_param()
     ))
     .map_err(|why| {
         warn!("Error building gateway URL with base `{base_url}`: {why:?}");
         Error::Gateway(GatewayError::BuildingUrl)
     })?;
 
-    let client = WsClient::connect(url, compression).await?;
+    let client = WsClient::connect(url).await?;
     Ok(client)
 }
 
@@ -803,43 +784,5 @@ impl fmt::Display for ConnectionStage {
             Self::Identifying => "identifying",
             Self::Resuming => "resuming",
         })
-    }
-}
-
-/// The transport compression method to use.
-#[derive(Copy, Clone, Debug, PartialEq, Eq)]
-#[non_exhaustive]
-pub enum TransportCompression {
-    /// No transport compression. Payload compression will be used instead.
-    None,
-
-    #[cfg(feature = "transport_compression_zlib")]
-    /// Use zlib-stream transport compression.
-    Zlib,
-
-    #[cfg(feature = "transport_compression_zstd")]
-    /// Use zstd-stream transport compression.
-    Zstd,
-}
-
-impl TransportCompression {
-    fn query_param(self) -> ArrayString<21> {
-        #[cfg_attr(
-            not(any(
-                feature = "transport_compression_zlib",
-                feature = "transport_compression_zstd"
-            )),
-            expect(unused_mut)
-        )]
-        let mut res = ArrayString::new();
-        match self {
-            Self::None => {},
-            #[cfg(feature = "transport_compression_zlib")]
-            Self::Zlib => aformat_into!(res, "&compress=zlib-stream"),
-            #[cfg(feature = "transport_compression_zstd")]
-            Self::Zstd => aformat_into!(res, "&compress=zstd-stream"),
-        }
-
-        res
     }
 }

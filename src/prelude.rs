@@ -26,6 +26,6 @@ pub use crate::http::CacheHttp;
 pub use crate::http::HttpError;
 pub use crate::model::mention::Mentionable;
 #[cfg(feature = "model")]
-pub use crate::model::{ModelError, gateway::GatewayIntents};
+pub use crate::model::ModelError;
 pub use crate::secrets::Token;
 pub use crate::model::event::IEvent;

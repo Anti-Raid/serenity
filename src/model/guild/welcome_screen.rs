@@ -5,7 +5,7 @@ use crate::model::prelude::*;
 /// Information relating to a guild's welcome screen.
 ///
 /// [Discord docs](https://discord.com/developers/docs/resources/guild#welcome-screen-object).
-#[cfg_attr(feature = "typesize", derive(typesize::derive::TypeSize))]
+
 #[derive(Clone, Debug, Deserialize, Serialize)]
 #[non_exhaustive]
 pub struct GuildWelcomeScreen {
@@ -20,7 +20,7 @@ pub struct GuildWelcomeScreen {
 /// A channel shown in the [`GuildWelcomeScreen`].
 ///
 /// [Discord docs](https://discord.com/developers/docs/resources/guild#welcome-screen-object-welcome-screen-channel-structure).
-#[cfg_attr(feature = "typesize", derive(typesize::derive::TypeSize))]
+
 #[derive(Clone, Debug)]
 #[non_exhaustive]
 pub struct GuildWelcomeChannel {
@@ -90,7 +90,7 @@ impl Serialize for GuildWelcomeChannel {
 /// A [`GuildWelcomeScreen`] emoji.
 ///
 /// [Discord docs](https://discord.com/developers/docs/resources/guild#welcome-screen-object-welcome-screen-channel-structure).
-#[cfg_attr(feature = "typesize", derive(typesize::derive::TypeSize))]
+
 #[derive(Clone, Debug, Eq, PartialEq, Hash)]
 #[non_exhaustive]
 pub enum GuildWelcomeChannelEmoji {

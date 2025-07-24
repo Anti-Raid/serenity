@@ -3,7 +3,7 @@ enum_number! {
     ///
     /// [Discord docs](https://discord.com/developers/docs/resources/guild#guild-object-premium-tier).
     #[derive(Clone, Copy, Debug, Default, Eq, Hash, Ord, PartialEq, PartialOrd, Deserialize, Serialize)]
-    #[cfg_attr(feature = "typesize", derive(typesize::derive::TypeSize))]
+    
     #[non_exhaustive]
     pub enum PremiumTier {
         /// Guild has not unlocked any Server Boost perks

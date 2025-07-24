@@ -3,7 +3,7 @@ use nonmax::NonMaxU16;
 use crate::model::prelude::*;
 use crate::model::utils::StrOrInt;
 
-#[cfg_attr(feature = "typesize", derive(typesize::derive::TypeSize))]
+
 #[derive(Debug, PartialEq, Eq, Deserialize, Serialize, Clone)]
 #[non_exhaustive]
 pub struct AffectedRole {
@@ -11,7 +11,7 @@ pub struct AffectedRole {
     pub name: FixedString,
 }
 
-#[cfg_attr(feature = "typesize", derive(typesize::derive::TypeSize))]
+
 #[derive(Debug, PartialEq, Eq, Serialize, Clone)]
 #[serde(untagged)]
 #[non_exhaustive]
@@ -31,7 +31,7 @@ macro_rules! generate_change {
         $( #[doc = $doc:literal] )?
         $key:literal => $name:ident ($type:ty),
     )* ) => {
-        #[cfg_attr(feature = "typesize", derive(typesize::derive::TypeSize))]
+        
         #[derive(Debug, PartialEq, Eq, Serialize, Deserialize, Clone)]
         #[non_exhaustive]
         #[serde(tag = "key")]

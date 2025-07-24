@@ -10,7 +10,7 @@ use crate::model::prelude::*;
 /// An interaction when a user invokes a slash command.
 ///
 /// [Discord docs](https://discord.com/developers/docs/interactions/receiving-and-responding#interaction-object).
-#[cfg_attr(feature = "typesize", derive(typesize::derive::TypeSize))]
+
 #[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(remote = "Self")]
 #[non_exhaustive]
@@ -67,7 +67,7 @@ impl<'de> Deserialize<'de> for CommandInteraction {
                 interaction.user = member.user.clone();
             }
 
-            interaction.data.resolved.roles.iter_mut().for_each(|r| r.guild_id = guild_id);
+            interaction.data.resolved.roles.iter_mut().for_each(|(_, r)| r.guild_id = guild_id);
         }
         Ok(interaction)
     }
@@ -83,7 +83,7 @@ impl Serialize for CommandInteraction {
 /// The command data payload.
 ///
 /// [Discord docs](https://discord.com/developers/docs/interactions/receiving-and-responding#interaction-object-interaction-data-structure).
-#[cfg_attr(feature = "typesize", derive(typesize::derive::TypeSize))]
+
 #[derive(Clone, Debug, Deserialize, Serialize)]
 #[non_exhaustive]
 pub struct CommandData {
@@ -140,75 +140,6 @@ impl CommandData {
             None
         }
         find_option(&self.options)
-    }
-
-    /// Returns the resolved options from `CommandData::options` and [`CommandData::resolved`].
-    #[must_use]
-    pub fn options(&self) -> Vec<ResolvedOption<'_>> {
-        fn resolve_options<'a>(
-            opts: &'a [CommandDataOption],
-            resolved: &'a CommandDataResolved,
-        ) -> Vec<ResolvedOption<'a>> {
-            let mut options = Vec::new();
-            for opt in opts {
-                let value = match &opt.value {
-                    CommandDataOptionValue::SubCommand(opts) => {
-                        ResolvedValue::SubCommand(resolve_options(opts, resolved).trunc_into())
-                    },
-                    CommandDataOptionValue::SubCommandGroup(opts) => {
-                        ResolvedValue::SubCommandGroup(resolve_options(opts, resolved).trunc_into())
-                    },
-                    CommandDataOptionValue::Autocomplete {
-                        kind,
-                        value,
-                    } => ResolvedValue::Autocomplete {
-                        kind: *kind,
-                        value,
-                    },
-                    CommandDataOptionValue::Boolean(v) => ResolvedValue::Boolean(*v),
-                    CommandDataOptionValue::Integer(v) => ResolvedValue::Integer(*v),
-                    CommandDataOptionValue::Number(v) => ResolvedValue::Number(*v),
-                    CommandDataOptionValue::String(v) => ResolvedValue::String(v),
-                    CommandDataOptionValue::Attachment(id) => resolved.attachments.get(id).map_or(
-                        ResolvedValue::Unresolved(Unresolved::Attachment(*id)),
-                        ResolvedValue::Attachment,
-                    ),
-                    CommandDataOptionValue::Channel(id) => resolved.channels.get(id).map_or(
-                        ResolvedValue::Unresolved(Unresolved::Channel(*id)),
-                        ResolvedValue::Channel,
-                    ),
-                    CommandDataOptionValue::Mentionable(id) => {
-                        let user_id = UserId::new(id.get());
-                        let value = if let Some(user) = resolved.users.get(&user_id) {
-                            Some(ResolvedValue::User(user, resolved.members.get(&user_id)))
-                        } else {
-                            resolved.roles.get(&RoleId::new(id.get())).map(ResolvedValue::Role)
-                        };
-                        value.unwrap_or(ResolvedValue::Unresolved(Unresolved::Mentionable(*id)))
-                    },
-                    CommandDataOptionValue::User(id) => resolved
-                        .users
-                        .get(id)
-                        .map(|u| ResolvedValue::User(u, resolved.members.get(id)))
-                        .unwrap_or(ResolvedValue::Unresolved(Unresolved::User(*id))),
-                    CommandDataOptionValue::Role(id) => resolved.roles.get(id).map_or(
-                        ResolvedValue::Unresolved(Unresolved::RoleId(*id)),
-                        ResolvedValue::Role,
-                    ),
-                    CommandDataOptionValue::Unknown(unknown) => {
-                        ResolvedValue::Unresolved(Unresolved::Unknown(*unknown))
-                    },
-                };
-
-                options.push(ResolvedOption {
-                    name: &opt.name,
-                    value,
-                });
-            }
-            options
-        }
-
-        resolve_options(&self.options, &self.resolved)
     }
 
     /// The target resolved data of [`target_id`]
@@ -295,17 +226,16 @@ pub enum ResolvedTarget<'a> {
 /// [`CommandDataOption`]s.
 ///
 /// [Discord docs](https://discord.com/developers/docs/interactions/receiving-and-responding#interaction-object-resolved-data-structure).
-#[cfg_attr(feature = "typesize", derive(typesize::derive::TypeSize))]
+
 #[derive(Clone, Debug, Default, Deserialize, Serialize)]
 #[non_exhaustive]
 pub struct CommandDataResolved {
     /// The resolved users.
     #[serde(
         default,
-        skip_serializing_if = "ExtractMap::is_empty",
-        serialize_with = "extract_map::serialize_as_map"
+        skip_serializing_if = "HashMap::is_empty",
     )]
-    pub users: ExtractMap<UserId, User>,
+    pub users: HashMap<UserId, User>,
     /// The resolved partial members.
     // Cannot use ExtractMap, as PartialMember does not always store an ID.
     #[serde(default, skip_serializing_if = "HashMap::is_empty")]
@@ -313,31 +243,27 @@ pub struct CommandDataResolved {
     /// The resolved roles.
     #[serde(
         default,
-        skip_serializing_if = "ExtractMap::is_empty",
-        serialize_with = "extract_map::serialize_as_map"
+        skip_serializing_if = "HashMap::is_empty",
     )]
-    pub roles: ExtractMap<RoleId, Role>,
+    pub roles: HashMap<RoleId, Role>,
     /// The resolved partial channels.
     #[serde(
         default,
-        skip_serializing_if = "ExtractMap::is_empty",
-        serialize_with = "extract_map::serialize_as_map"
+        skip_serializing_if = "HashMap::is_empty",
     )]
-    pub channels: ExtractMap<GenericChannelId, GenericInteractionChannel>,
+    pub channels: HashMap<GenericChannelId, GenericInteractionChannel>,
     /// The resolved messages.
     #[serde(
         default,
-        skip_serializing_if = "ExtractMap::is_empty",
-        serialize_with = "extract_map::serialize_as_map"
+        skip_serializing_if = "HashMap::is_empty",
     )]
-    pub messages: ExtractMap<MessageId, Message>,
+    pub messages: HashMap<MessageId, Message>,
     /// The resolved attachments.
     #[serde(
         default,
-        skip_serializing_if = "ExtractMap::is_empty",
-        serialize_with = "extract_map::serialize_as_map"
+        skip_serializing_if = "HashMap::is_empty",
     )]
-    pub attachments: ExtractMap<AttachmentId, Attachment>,
+    pub attachments: HashMap<AttachmentId, Attachment>,
 }
 
 /// A set of a parameter and a value from the user.
@@ -349,7 +275,7 @@ pub struct CommandDataResolved {
 /// Their resolved objects can be found on [`CommandData::resolved`].
 ///
 /// [Discord docs](https://discord.com/developers/docs/interactions/receiving-and-responding#interaction-object-application-command-interaction-data-option-structure).
-#[cfg_attr(feature = "typesize", derive(typesize::derive::TypeSize))]
+
 #[derive(Clone, Debug, PartialEq)]
 #[non_exhaustive]
 pub struct CommandDataOption {
@@ -472,7 +398,7 @@ impl Serialize for CommandDataOption {
 /// The value of an [`CommandDataOption`].
 ///
 /// [Discord docs](https://discord.com/developers/docs/interactions/application-commands#application-command-object-application-command-option-type).
-#[cfg_attr(feature = "typesize", derive(typesize::derive::TypeSize))]
+
 #[derive(Clone, Debug, PartialEq)]
 #[non_exhaustive]
 pub enum CommandDataOptionValue {

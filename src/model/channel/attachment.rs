@@ -28,7 +28,7 @@ where
 /// [Discord docs](https://discord.com/developers/docs/resources/channel#attachment-object).
 ///
 /// [`Embed`]: super::Embed
-#[cfg_attr(feature = "typesize", derive(typesize::derive::TypeSize))]
+
 #[derive(Clone, Debug, Deserialize, Serialize)]
 #[non_exhaustive]
 pub struct Attachment {
@@ -148,11 +148,5 @@ impl Attachment {
         let reqwest = ReqwestClient::new();
         let bytes = reqwest.get(&*self.url).send().await?.bytes().await?;
         Ok(bytes.to_vec())
-    }
-}
-
-impl ExtractKey<AttachmentId> for Attachment {
-    fn extract_key(&self) -> &AttachmentId {
-        &self.id
     }
 }

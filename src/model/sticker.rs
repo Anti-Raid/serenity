@@ -4,7 +4,7 @@ use crate::model::utils::comma_separated_string;
 /// The smallest amount of data required to render a sticker.
 ///
 /// [Discord docs](https://discord.com/developers/docs/resources/sticker#sticker-item-object).
-#[cfg_attr(feature = "typesize", derive(typesize::derive::TypeSize))]
+
 #[derive(Clone, Debug, Deserialize, Serialize)]
 #[non_exhaustive]
 pub struct StickerItem {
@@ -73,7 +73,7 @@ fn banner_url(banner_asset_id: StickerPackBannerId) -> String {
 /// A sticker sent with a message.
 ///
 /// [Discord docs](https://discord.com/developers/docs/resources/sticker#sticker-object).
-#[cfg_attr(feature = "typesize", derive(typesize::derive::TypeSize))]
+
 #[derive(Clone, Debug, Deserialize, Serialize)]
 #[non_exhaustive]
 pub struct Sticker {
@@ -131,7 +131,7 @@ enum_number! {
     ///
     /// [Discord docs](https://discord.com/developers/docs/resources/sticker#sticker-object-sticker-types).
     #[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd, Deserialize, Serialize)]
-    #[cfg_attr(feature = "typesize", derive(typesize::derive::TypeSize))]
+    
     #[non_exhaustive]
     pub enum StickerType {
         /// An official sticker in a pack, part of Nitro or in a removed purchasable pack.
@@ -147,7 +147,7 @@ enum_number! {
     ///
     /// [Discord docs](https://discord.com/developers/docs/resources/sticker#sticker-object-sticker-format-types).
     #[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd, Deserialize, Serialize)]
-    #[cfg_attr(feature = "typesize", derive(typesize::derive::TypeSize))]
+    
     #[non_exhaustive]
     pub enum StickerFormatType {
         /// A PNG format sticker.

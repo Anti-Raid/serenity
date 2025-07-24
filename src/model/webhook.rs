@@ -7,7 +7,7 @@ enum_number! {
     ///
     /// [Discord docs](https://discord.com/developers/docs/resources/webhook#webhook-object-webhook-types).
     #[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd, Deserialize, Serialize)]
-    #[cfg_attr(feature = "typesize", derive(typesize::derive::TypeSize))]
+    
     #[non_exhaustive]
     pub enum WebhookType {
         /// An indicator that the webhook can post messages to channels with a token.
@@ -37,7 +37,7 @@ impl WebhookType {
 /// not necessarily require a bot user or authentication to use.
 ///
 /// [Discord docs](https://discord.com/developers/docs/resources/webhook#webhook-object).
-#[cfg_attr(feature = "typesize", derive(typesize::derive::TypeSize))]
+
 #[derive(Debug, Clone, Deserialize, Serialize)]
 #[non_exhaustive]
 pub struct Webhook {
@@ -78,14 +78,8 @@ pub struct Webhook {
     pub url: Option<SecretString>,
 }
 
-impl ExtractKey<WebhookId> for Webhook {
-    fn extract_key(&self) -> &WebhookId {
-        &self.id
-    }
-}
-
 /// The guild object returned by a [`Webhook`], of type [`WebhookType::ChannelFollower`].
-#[cfg_attr(feature = "typesize", derive(typesize::derive::TypeSize))]
+
 #[derive(Debug, Clone, Deserialize, Serialize)]
 #[non_exhaustive]
 pub struct WebhookGuild {
@@ -99,7 +93,7 @@ pub struct WebhookGuild {
     pub icon: Option<ImageHash>,
 }
 
-#[cfg_attr(feature = "typesize", derive(typesize::derive::TypeSize))]
+
 #[derive(Debug, Clone, Deserialize, Serialize)]
 #[non_exhaustive]
 pub struct WebhookChannel {

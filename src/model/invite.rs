@@ -249,7 +249,7 @@ enum_number! {
     ///
     /// [Discord docs](https://discord.com/developers/docs/resources/invite#invite-object-invite-target-types).
     #[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd, Deserialize, Serialize)]
-    #[cfg_attr(feature = "typesize", derive(typesize::derive::TypeSize))]
+    
     #[non_exhaustive]
     pub enum InviteTargetType {
         Stream = 1,
