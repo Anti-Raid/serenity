@@ -122,6 +122,8 @@ native_tls_backend = [
     "tokio-tungstenite/native-tls",
 ]
 
+# Stub features
+cache = []
 
 [package.metadata.docs.rs]
 features = ["full"]
