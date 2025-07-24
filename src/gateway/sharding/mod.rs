@@ -299,8 +299,8 @@ impl Shard {
     fn handle_gateway_dispatch(
         &mut self,
         seq: u64,
-        event: Box<IEvent>,
-    ) -> Result<Option<Box<IEvent>>> {
+        event: IEvent,
+    ) -> Result<Option<IEvent>> {
         if seq > self.seq + 1 {
             warn!("[{:?}] Sequence off; them: {}, us: {}", self.info, seq, self.seq);
         }
@@ -688,7 +688,7 @@ pub enum ShardAction {
     Heartbeat,
     Identify,
     Reconnect,
-    Dispatch(Box<IEvent>),
+    Dispatch(IEvent),
 }
 
 /// Information about a [`ShardRunner`].

@@ -9,5 +9,5 @@ use crate::model::prelude::*;
 pub trait EventHandler: Send + Sync {
     /// Dispatches an event through this handler, allowing for event matching and handling
     /// based on individual event variants.
-    async fn dispatch(&self, _context: &Context, _event: &IEvent) {}
+    async fn dispatch(&self, _context: &Context, _event: IEvent) {}
 }

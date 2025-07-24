@@ -38,7 +38,7 @@ pub struct ResumedEvent {}
 pub enum GatewayEvent {
     Dispatch {
         seq: u64,
-        event: Box<IEvent>,
+        event: IEvent,
     },
     Heartbeat,
     Reconnect,
@@ -97,11 +97,11 @@ impl<'de> Deserialize<'de> for GatewayEvent {
 
                 Self::Dispatch {
                     seq: raw.seq.ok_or_else(|| DeError::missing_field("s"))?,
-                    event: Box::new(IEvent {
+                    event: IEvent {
                         ty: raw.ty.ok_or_else(|| DeError::missing_field("t"))?.to_string(),
                         data: raw.data,
                         sandwich_edt: raw.sandwich_edt,
-                    }),
+                    },
                 }
             },
             Opcode::Heartbeat => Self::Heartbeat,
