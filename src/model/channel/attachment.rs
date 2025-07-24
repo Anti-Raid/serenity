@@ -150,3 +150,9 @@ impl Attachment {
         Ok(bytes.to_vec())
     }
 }
+
+impl ExtractKey<AttachmentId> for Attachment {
+    fn extract_key(&self) -> &AttachmentId {
+        &self.id
+    }
+}

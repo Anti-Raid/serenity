@@ -67,7 +67,7 @@ impl<'de> Deserialize<'de> for CommandInteraction {
                 interaction.user = member.user.clone();
             }
 
-            interaction.data.resolved.roles.iter_mut().for_each(|(_, r)| r.guild_id = guild_id);
+            interaction.data.resolved.roles.iter_mut().for_each(|r| r.guild_id = guild_id);
         }
         Ok(interaction)
     }
@@ -233,9 +233,10 @@ pub struct CommandDataResolved {
     /// The resolved users.
     #[serde(
         default,
-        skip_serializing_if = "HashMap::is_empty",
+        skip_serializing_if = "ExtractMap::is_empty",
+        serialize_with = "extract_map::serialize_as_map",
     )]
-    pub users: HashMap<UserId, User>,
+    pub users: ExtractMap<UserId, User>,
     /// The resolved partial members.
     // Cannot use ExtractMap, as PartialMember does not always store an ID.
     #[serde(default, skip_serializing_if = "HashMap::is_empty")]
@@ -243,27 +244,31 @@ pub struct CommandDataResolved {
     /// The resolved roles.
     #[serde(
         default,
-        skip_serializing_if = "HashMap::is_empty",
+        skip_serializing_if = "ExtractMap::is_empty",
+        serialize_with = "extract_map::serialize_as_map",
     )]
-    pub roles: HashMap<RoleId, Role>,
+    pub roles: ExtractMap<RoleId, Role>,
     /// The resolved partial channels.
     #[serde(
         default,
-        skip_serializing_if = "HashMap::is_empty",
+        skip_serializing_if = "ExtractMap::is_empty",
+        serialize_with = "extract_map::serialize_as_map",
     )]
-    pub channels: HashMap<GenericChannelId, GenericInteractionChannel>,
+    pub channels: ExtractMap<GenericChannelId, GenericInteractionChannel>,
     /// The resolved messages.
     #[serde(
         default,
-        skip_serializing_if = "HashMap::is_empty",
+        skip_serializing_if = "ExtractMap::is_empty",
+        serialize_with = "extract_map::serialize_as_map",
     )]
-    pub messages: HashMap<MessageId, Message>,
+    pub messages: ExtractMap<MessageId, Message>,
     /// The resolved attachments.
     #[serde(
         default,
-        skip_serializing_if = "HashMap::is_empty",
+        skip_serializing_if = "ExtractMap::is_empty",
+        serialize_with = "extract_map::serialize_as_map",
     )]
-    pub attachments: HashMap<AttachmentId, Attachment>,
+    pub attachments: ExtractMap<AttachmentId, Attachment>,
 }
 
 /// A set of a parameter and a value from the user.
