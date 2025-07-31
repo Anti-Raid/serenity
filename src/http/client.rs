@@ -237,7 +237,7 @@ impl Http {
         guild_id: GuildId,
         user_id: UserId,
         map: &impl serde::Serialize,
-    ) -> Result<Option<Member>> {
+    ) -> ResultJson {
         let body = to_vec(map)?;
 
         let response = self
@@ -254,7 +254,7 @@ impl Http {
             })
             .await?;
 
-        if response.status() == 204 { Ok(None) } else { Ok(Some(response.json().await?)) }
+        if response.status() == 204 { Ok(serde_json::Value::Null) } else { Ok(response.json().await?) }
     }
 
     /// Adds a single [`Role`] to a [`Member`] in a [`Guild`].
@@ -315,7 +315,7 @@ impl Http {
         guild_id: GuildId,
         map: &impl serde::Serialize,
         reason: Option<&str>,
-    ) -> Result<BulkBanResponse> {
+    ) -> ResultJson {
         self.fire(Request {
             body: Some(to_vec(map)?),
             multipart: None,
@@ -350,7 +350,7 @@ impl Http {
         guild_id: GuildId,
         map: &impl serde::Serialize,
         audit_log_reason: Option<&str>,
-    ) -> Result<GuildChannel> {
+    ) -> ResultJson {
         let body = to_vec(map)?;
 
         self.fire(Request {
@@ -371,7 +371,7 @@ impl Http {
         &self,
         map: &impl serde::Serialize,
         audit_log_reason: Option<&str>,
-    ) -> Result<StageInstance> {
+    ) -> ResultJson {
         self.fire(Request {
             body: Some(to_vec(map)?),
             multipart: None,
@@ -390,7 +390,7 @@ impl Http {
         message_id: MessageId,
         map: &impl serde::Serialize,
         audit_log_reason: Option<&str>,
-    ) -> Result<GuildThread> {
+    ) -> ResultJson {
         let body = to_vec(map)?;
 
         self.fire(Request {
@@ -413,7 +413,7 @@ impl Http {
         channel_id: ChannelId,
         map: &impl serde::Serialize,
         audit_log_reason: Option<&str>,
-    ) -> Result<GuildThread> {
+    ) -> ResultJson {
         let body = to_vec(map)?;
 
         self.fire(Request {
@@ -436,7 +436,7 @@ impl Http {
         map: &impl serde::Serialize,
         files: Vec<CreateAttachment<'_>>,
         audit_log_reason: Option<&str>,
-    ) -> Result<GuildThread> {
+    ) -> ResultJson {
         self.fire(Request {
             body: None,
             multipart: Some(Multipart {
@@ -460,7 +460,7 @@ impl Http {
         guild_id: GuildId,
         map: &impl serde::Serialize,
         audit_log_reason: Option<&str>,
-    ) -> Result<Emoji> {
+    ) -> ResultJson {
         self.fire(Request {
             body: Some(to_vec(map)?),
             multipart: None,
@@ -479,7 +479,7 @@ impl Http {
     /// See [`Context::create_application_emoji`] for required fields.
     ///
     /// [`Context::create_application_emoji`]: crate::gateway::client::Context::create_application_emoji
-    pub async fn create_application_emoji(&self, map: &impl serde::Serialize) -> Result<Emoji> {
+    pub async fn create_application_emoji(&self, map: &impl serde::Serialize) -> ResultJson {
         self.fire(Request {
             body: Some(to_vec(map)?),
             multipart: None,
@@ -528,7 +528,7 @@ impl Http {
     }
 
     /// Creates a new global command.
-    pub async fn create_global_command(&self, map: &impl serde::Serialize) -> Result<Command> {
+    pub async fn create_global_command(&self, map: &impl serde::Serialize) -> ResultJson {
         self.fire(Request {
             body: Some(to_vec(map)?),
             multipart: None,
@@ -546,7 +546,7 @@ impl Http {
     pub async fn create_global_commands(
         &self,
         map: &impl serde::Serialize,
-    ) -> Result<Vec<Command>> {
+    ) -> ResultJson {
         self.fire(Request {
             body: Some(to_vec(map)?),
             multipart: None,
@@ -565,7 +565,7 @@ impl Http {
         &self,
         guild_id: GuildId,
         map: &impl serde::Serialize,
-    ) -> Result<Vec<Command>> {
+    ) -> ResultJson {
         self.fire(Request {
             body: Some(to_vec(map)?),
             multipart: None,
@@ -587,7 +587,7 @@ impl Http {
     ///
     /// [`Shard`]: crate::gateway::Shard
     #[deprecated = "This endpoint has been deprecated by Discord and will stop functioning after July 15, 2025. For more information, see: https://discord.com/developers/docs/change-log#deprecating-guild-creation-by-apps"]
-    pub async fn create_guild(&self, map: &impl serde::Serialize) -> Result<PartialGuild> {
+    pub async fn create_guild(&self, map: &impl serde::Serialize) -> ResultJson {
         self.fire(Request {
             body: Some(to_vec(map)?),
             multipart: None,
@@ -606,7 +606,7 @@ impl Http {
         &self,
         guild_id: GuildId,
         map: &impl serde::Serialize,
-    ) -> Result<Command> {
+    ) -> ResultJson {
         self.fire(Request {
             body: Some(to_vec(map)?),
             multipart: None,
@@ -682,7 +682,7 @@ impl Http {
         channel_id: ChannelId,
         map: &impl serde::Serialize,
         audit_log_reason: Option<&str>,
-    ) -> Result<RichInvite> {
+    ) -> ResultJson {
         let body = to_vec(map)?;
 
         self.fire(Request {
@@ -726,7 +726,7 @@ impl Http {
     pub async fn create_private_channel(
         &self,
         map: &impl serde::Serialize,
-    ) -> Result<PrivateChannel> {
+    ) -> ResultJson {
         let body = to_vec(map)?;
 
         self.fire(Request {
@@ -768,7 +768,7 @@ impl Http {
         guild_id: GuildId,
         body: &impl serde::Serialize,
         audit_log_reason: Option<&str>,
-    ) -> Result<Role> {
+    ) -> ResultJson {
         let mut value: Value = self
             .fire(Request {
                 body: Some(to_vec(body)?),
@@ -795,7 +795,7 @@ impl Http {
         guild_id: GuildId,
         map: &impl serde::Serialize,
         audit_log_reason: Option<&str>,
-    ) -> Result<ScheduledEvent> {
+    ) -> ResultJson {
         let body = to_vec(map)?;
         self.fire(Request {
             body: Some(body),
@@ -817,7 +817,7 @@ impl Http {
         fields: Vec<(Cow<'static, str>, Cow<'static, str>)>,
         file: CreateAttachment<'_>,
         audit_log_reason: Option<&str>,
-    ) -> Result<Sticker> {
+    ) -> ResultJson {
         self.fire(Request {
             body: None,
             multipart: Some(Multipart {
@@ -842,7 +842,7 @@ impl Http {
         &self,
         sku_id: SkuId,
         owner: EntitlementOwner,
-    ) -> Result<Entitlement> {
+    ) -> ResultJson {
         #[derive(serde::Serialize)]
         struct TestEntitlement {
             sku_id: SkuId,
@@ -880,7 +880,7 @@ impl Http {
         channel_id: ChannelId,
         map: &impl serde::Serialize,
         audit_log_reason: Option<&str>,
-    ) -> Result<Webhook> {
+    ) -> ResultJson {
         let body = to_vec(map)?;
 
         self.fire(Request {
@@ -901,7 +901,7 @@ impl Http {
         &self,
         channel_id: GenericChannelId,
         audit_log_reason: Option<&str>,
-    ) -> Result<Channel> {
+    ) -> ResultJson {
         self.fire(Request {
             body: None,
             multipart: None,
@@ -1070,7 +1070,7 @@ impl Http {
         &self,
         code: &str,
         audit_log_reason: Option<&str>,
-    ) -> Result<Invite> {
+    ) -> ResultJson {
         self.fire(Request {
             body: None,
             multipart: None,
@@ -1380,7 +1380,7 @@ impl Http {
         channel_id: GenericChannelId,
         map: &impl serde::Serialize,
         audit_log_reason: Option<&str>,
-    ) -> Result<Channel> {
+    ) -> ResultJson {
         self.fire(Request {
             body: Some(to_vec(map)?),
             multipart: None,
@@ -1400,7 +1400,7 @@ impl Http {
         channel_id: ChannelId,
         map: &impl serde::Serialize,
         audit_log_reason: Option<&str>,
-    ) -> Result<StageInstance> {
+    ) -> ResultJson {
         self.fire(Request {
             body: Some(to_vec(map)?),
             multipart: None,
@@ -1421,7 +1421,7 @@ impl Http {
         emoji_id: EmojiId,
         map: &impl serde::Serialize,
         audit_log_reason: Option<&str>,
-    ) -> Result<Emoji> {
+    ) -> ResultJson {
         let body = to_vec(map)?;
 
         self.fire(Request {
@@ -1447,7 +1447,7 @@ impl Http {
         &self,
         emoji_id: EmojiId,
         map: &impl serde::Serialize,
-    ) -> Result<Emoji> {
+    ) -> ResultJson {
         self.fire(Request {
             body: Some(to_vec(map)?),
             multipart: None,
@@ -1522,7 +1522,7 @@ impl Http {
         &self,
         command_id: CommandId,
         map: &impl serde::Serialize,
-    ) -> Result<Command> {
+    ) -> ResultJson {
         self.fire(Request {
             body: Some(to_vec(map)?),
             multipart: None,
@@ -1543,7 +1543,7 @@ impl Http {
         guild_id: GuildId,
         map: &impl serde::Serialize,
         audit_log_reason: Option<&str>,
-    ) -> Result<PartialGuild> {
+    ) -> ResultJson {
         let body = to_vec(map)?;
 
         self.fire(Request {
@@ -1565,7 +1565,7 @@ impl Http {
         guild_id: GuildId,
         command_id: CommandId,
         map: &impl serde::Serialize,
-    ) -> Result<Command> {
+    ) -> ResultJson {
         self.fire(Request {
             body: Some(to_vec(map)?),
             multipart: None,
@@ -1587,7 +1587,7 @@ impl Http {
         guild_id: GuildId,
         command_id: CommandId,
         map: &impl serde::Serialize,
-    ) -> Result<CommandPermissions> {
+    ) -> ResultJson {
         self.fire(Request {
             body: Some(to_vec(map)?),
             multipart: None,
@@ -1630,12 +1630,7 @@ impl Http {
         guild_id: GuildId,
         value: &impl serde::Serialize,
         audit_log_reason: Option<&str>,
-    ) -> Result<MfaLevel> {
-        #[derive(Deserialize)]
-        struct GuildMfaLevel {
-            level: MfaLevel,
-        }
-
+    ) -> ResultJson {
         let body = to_vec(value)?;
 
         self.fire(Request {
@@ -1649,7 +1644,6 @@ impl Http {
             params: None,
         })
         .await
-        .map(|mfa: GuildMfaLevel| mfa.level)
     }
 
     /// Edits a [`Guild`]'s widget.
@@ -1658,7 +1652,7 @@ impl Http {
         guild_id: GuildId,
         map: &impl serde::Serialize,
         audit_log_reason: Option<&str>,
-    ) -> Result<GuildWidget> {
+    ) -> ResultJson {
         let body = to_vec(map)?;
 
         self.fire(Request {
@@ -1680,7 +1674,7 @@ impl Http {
         guild_id: GuildId,
         map: &impl serde::Serialize,
         audit_log_reason: Option<&str>,
-    ) -> Result<GuildWelcomeScreen> {
+    ) -> ResultJson {
         let body = to_vec(map)?;
 
         self.fire(Request {
@@ -1703,7 +1697,7 @@ impl Http {
         user_id: UserId,
         map: &impl serde::Serialize,
         audit_log_reason: Option<&str>,
-    ) -> Result<Member> {
+    ) -> ResultJson {
         let body = to_vec(map)?;
 
         let mut value: Value = self
@@ -1721,10 +1715,10 @@ impl Http {
             .await?;
 
         if let Some(map) = value.as_object_mut() {
-            map.insert("guild_id".to_string(), guild_id.get().into());
+            map.insert("guild_id".to_string(), guild_id.to_string().into());
         }
 
-        from_value::<Member>(value).map_err(From::from)
+        Ok(value)
     }
 
     /// Edits a message by Id.
@@ -1790,7 +1784,7 @@ impl Http {
         guild_id: GuildId,
         map: &impl serde::Serialize,
         audit_log_reason: Option<&str>,
-    ) -> Result<Member> {
+    ) -> ResultJson {
         self.fire(Request {
             body: Some(to_vec(map)?),
             multipart: None,
@@ -1810,7 +1804,7 @@ impl Http {
         guild_id: GuildId,
         map: &impl serde::Serialize,
         audit_log_reason: Option<&str>,
-    ) -> Result<Member> {
+    ) -> ResultJson {
         self.fire(Request {
             body: Some(to_vec(&map)?),
             multipart: None,
@@ -1829,7 +1823,7 @@ impl Http {
         &self,
         news_channel_id: ChannelId,
         map: &impl serde::Serialize,
-    ) -> Result<FollowedChannel> {
+    ) -> ResultJson {
         self.fire(Request {
             body: Some(to_vec(&map)?),
             multipart: None,
@@ -1895,7 +1889,7 @@ impl Http {
     }
 
     /// Edits the current user's profile settings.
-    pub async fn edit_profile(&self, map: &impl serde::Serialize) -> Result<CurrentUser> {
+    pub async fn edit_profile(&self, map: &impl serde::Serialize) -> ResultJson {
         let body = to_vec(map)?;
 
         self.fire(Request {
@@ -1916,7 +1910,7 @@ impl Http {
         role_id: RoleId,
         map: &impl serde::Serialize,
         audit_log_reason: Option<&str>,
-    ) -> Result<Role> {
+    ) -> ResultJson {
         let mut value: Value = self
             .fire(Request {
                 body: Some(to_vec(map)?),
@@ -1944,7 +1938,7 @@ impl Http {
         guild_id: GuildId,
         positions: impl Iterator<Item: serde::Serialize>,
         audit_log_reason: Option<&str>,
-    ) -> Result<Vec<Role>> {
+    ) -> ResultJson {
         let body = to_vec(&SerializeIter::new(positions))?;
 
         let mut value: Value = self
@@ -1982,7 +1976,7 @@ impl Http {
         event_id: ScheduledEventId,
         map: &impl serde::Serialize,
         audit_log_reason: Option<&str>,
-    ) -> Result<ScheduledEvent> {
+    ) -> ResultJson {
         let body = to_vec(map)?;
         self.fire(Request {
             body: Some(body),
@@ -2007,7 +2001,7 @@ impl Http {
         sticker_id: StickerId,
         map: &impl serde::Serialize,
         audit_log_reason: Option<&str>,
-    ) -> Result<Sticker> {
+    ) -> ResultJson {
         let body = to_vec(&map)?;
 
         let mut value: Value = self
@@ -2099,7 +2093,7 @@ impl Http {
         webhook_id: WebhookId,
         map: &impl serde::Serialize,
         audit_log_reason: Option<&str>,
-    ) -> Result<Webhook> {
+    ) -> ResultJson {
         self.fire(Request {
             body: Some(to_vec(map)?),
             multipart: None,
@@ -2120,7 +2114,7 @@ impl Http {
         token: &str,
         map: &impl serde::Serialize,
         audit_log_reason: Option<&str>,
-    ) -> Result<Webhook> {
+    ) -> ResultJson {
         let body = to_vec(map)?;
 
         self.fire(Request {
@@ -2327,30 +2321,6 @@ impl Http {
         .await
     }
 
-    /// Gets the active maintenances from Discord's Status API.
-    ///
-    /// Does not require authentication.
-    pub async fn get_active_maintenances(&self) -> Result<Vec<Maintenance>> {
-        #[derive(Deserialize)]
-        struct StatusResponse {
-            #[serde(default)]
-            scheduled_maintenances: Vec<Maintenance>,
-        }
-
-        let status: StatusResponse = self
-            .fire(Request {
-                body: None,
-                multipart: None,
-                headers: None,
-                method: LightMethod::Get,
-                route: Route::StatusMaintenancesActive,
-                params: None,
-            })
-            .await?;
-
-        Ok(status.scheduled_maintenances)
-    }
-
     /// Gets all the users that are banned in specific guild, with additional options for
     /// filtering.
     ///
@@ -2366,7 +2336,7 @@ impl Http {
         guild_id: GuildId,
         target: Option<UserPagination>,
         limit: Option<NonMaxU16>,
-    ) -> Result<Vec<Ban>> {
+    ) -> ResultJson {
         let id_str;
         let limit_str;
         let mut params = ArrayVec::<_, 2>::new();
@@ -2409,9 +2379,9 @@ impl Http {
     /// Returns [`Error::Http`] if the current user lacks permission.
     ///
     /// [Ban Members]: Permissions::BAN_MEMBERS
-    pub async fn get_ban(&self, guild_id: GuildId, user_id: UserId) -> Result<Option<Ban>> {
+    pub async fn get_ban(&self, guild_id: GuildId, user_id: UserId) -> ResultJson {
         let result = self
-            .fire(Request {
+            .request(Request {
                 body: None,
                 multipart: None,
                 headers: None,
@@ -2422,15 +2392,13 @@ impl Http {
                 },
                 params: None,
             })
-            .await;
+            .await?;
 
-        match result {
-            Ok(ban) => Ok(Some(ban)),
-            Err(Error::Http(ref err)) if err.status_code() == Some(StatusCode::NOT_FOUND) => {
-                Ok(None)
-            },
-            Err(e) => Err(e),
+        if result.status() == StatusCode::NOT_FOUND {
+            return Ok(serde_json::Value::Null);
         }
+
+        Ok(result.json().await?)
     }
 
     /// Gets all audit logs in a specific guild.
@@ -2441,7 +2409,7 @@ impl Http {
         user_id: Option<UserId>,
         before: Option<AuditLogEntryId>,
         limit: Option<NonMaxU8>,
-    ) -> Result<AuditLogs> {
+    ) -> ResultJson {
         let (action_type_str, before_str, limit_str, user_id_str);
         let mut params = ArrayVec::<_, 4>::new();
         if let Some(action_type) = action_type {
@@ -2475,7 +2443,7 @@ impl Http {
     }
 
     /// Retrieves all auto moderation rules in a guild.
-    pub async fn get_automod_rules(&self, guild_id: GuildId) -> Result<Vec<AutoModRule>> {
+    pub async fn get_automod_rules(&self, guild_id: GuildId) -> ResultJson {
         self.fire(Request {
             body: None,
             multipart: None,
@@ -2494,7 +2462,7 @@ impl Http {
         &self,
         guild_id: GuildId,
         rule_id: RuleId,
-    ) -> Result<AutoModRule> {
+    ) -> ResultJson {
         self.fire(Request {
             body: None,
             multipart: None,
@@ -2515,7 +2483,7 @@ impl Http {
         guild_id: GuildId,
         map: &impl serde::Serialize,
         audit_log_reason: Option<&str>,
-    ) -> Result<AutoModRule> {
+    ) -> ResultJson {
         let body = to_vec(map)?;
 
         self.fire(Request {
@@ -2538,7 +2506,7 @@ impl Http {
         rule_id: RuleId,
         map: &impl serde::Serialize,
         audit_log_reason: Option<&str>,
-    ) -> Result<AutoModRule> {
+    ) -> ResultJson {
         let body = to_vec(map)?;
 
         self.fire(Request {
@@ -2577,7 +2545,7 @@ impl Http {
     }
 
     /// Gets current bot gateway.
-    pub async fn get_bot_gateway(&self) -> Result<BotGateway> {
+    pub async fn get_bot_gateway(&self) -> ResultJson {
         self.fire(Request {
             body: None,
             multipart: None,
@@ -2590,7 +2558,7 @@ impl Http {
     }
 
     /// Gets all invites for a channel.
-    pub async fn get_channel_invites(&self, channel_id: ChannelId) -> Result<Vec<RichInvite>> {
+    pub async fn get_channel_invites(&self, channel_id: ChannelId) -> ResultJson {
         self.fire(Request {
             body: None,
             multipart: None,
@@ -2608,7 +2576,7 @@ impl Http {
     pub async fn get_channel_thread_members(
         &self,
         thread_id: ThreadId,
-    ) -> Result<Vec<ThreadMember>> {
+    ) -> ResultJson {
         self.fire(Request {
             body: None,
             multipart: None,
@@ -2623,7 +2591,7 @@ impl Http {
     }
 
     /// Gets all active threads from a guild.
-    pub async fn get_guild_active_threads(&self, guild_id: GuildId) -> Result<ThreadsData> {
+    pub async fn get_guild_active_threads(&self, guild_id: GuildId) -> ResultJson {
         self.fire(Request {
             body: None,
             multipart: None,
@@ -2643,7 +2611,7 @@ impl Http {
         channel_id: ChannelId,
         before: Option<Timestamp>,
         limit: Option<u64>,
-    ) -> Result<ThreadsData> {
+    ) -> ResultJson {
         let (before_str, limit_str);
         let mut params = ArrayVec::<_, 2>::new();
         if let Some(before) = before {
@@ -2674,7 +2642,7 @@ impl Http {
         channel_id: ChannelId,
         before: Option<Timestamp>,
         limit: Option<u64>,
-    ) -> Result<ThreadsData> {
+    ) -> ResultJson {
         let (before_str, limit_str);
         let mut params = ArrayVec::<_, 2>::new();
         if let Some(before) = before {
@@ -2705,7 +2673,7 @@ impl Http {
         channel_id: ChannelId,
         before: Option<ChannelId>,
         limit: Option<u64>,
-    ) -> Result<ThreadsData> {
+    ) -> ResultJson {
         let (before_str, limit_str);
         let mut params = ArrayVec::<_, 2>::new();
         if let Some(before) = before {
@@ -2805,7 +2773,7 @@ impl Http {
         thread_id: ThreadId,
         user_id: UserId,
         with_member: bool,
-    ) -> Result<ThreadMember> {
+    ) -> ResultJson {
         self.fire(Request {
             body: None,
             multipart: None,
@@ -2821,7 +2789,7 @@ impl Http {
     }
 
     /// Retrieves the webhooks for the given [channel][`GuildChannel`]'s Id.
-    pub async fn get_channel_webhooks(&self, channel_id: ChannelId) -> Result<Vec<Webhook>> {
+    pub async fn get_channel_webhooks(&self, channel_id: ChannelId) -> ResultJson {
         self.fire(Request {
             body: None,
             multipart: None,
@@ -2836,7 +2804,7 @@ impl Http {
     }
 
     /// Gets channel information.
-    pub async fn get_channel(&self, channel_id: GenericChannelId) -> Result<Channel> {
+    pub async fn get_channel(&self, channel_id: GenericChannelId) -> ResultJson {
         self.fire(Request {
             body: None,
             multipart: None,
@@ -2854,7 +2822,7 @@ impl Http {
     pub async fn get_channels(
         &self,
         guild_id: GuildId,
-    ) -> Result<ExtractMap<ChannelId, GuildChannel>> {
+    ) -> ResultJson {
         self.fire(Request {
             body: None,
             multipart: None,
@@ -2869,7 +2837,7 @@ impl Http {
     }
 
     /// Gets a stage instance.
-    pub async fn get_stage_instance(&self, channel_id: ChannelId) -> Result<StageInstance> {
+    pub async fn get_stage_instance(&self, channel_id: ChannelId) -> ResultJson {
         self.fire(Request {
             body: None,
             multipart: None,
@@ -2891,12 +2859,7 @@ impl Http {
         answer_id: AnswerId,
         after: Option<UserId>,
         limit: Option<u8>,
-    ) -> Result<Vec<User>> {
-        #[derive(Deserialize)]
-        struct VotersResponse {
-            users: Vec<User>,
-        }
-
+    ) -> ResultJson {
         let (after_str, limit_str);
         let mut params = ArrayVec::<_, 2>::new();
         if let Some(after) = after {
@@ -2909,7 +2872,7 @@ impl Http {
             params.push(("limit", &limit_str));
         }
 
-        let resp: VotersResponse = self
+        self
             .fire(Request {
                 body: None,
                 multipart: None,
@@ -2922,9 +2885,7 @@ impl Http {
                 },
                 params: Some(&params),
             })
-            .await?;
-
-        Ok(resp.users)
+            .await
     }
 
     pub async fn expire_poll(
@@ -2949,7 +2910,7 @@ impl Http {
     /// Gets information about the current application.
     ///
     /// **Note**: Only applications may use this endpoint.
-    pub async fn get_current_application_info(&self) -> Result<CurrentApplicationInfo> {
+    pub async fn get_current_application_info(&self) -> ResultJson {
         self.fire(Request {
             body: None,
             multipart: None,
@@ -2962,7 +2923,7 @@ impl Http {
     }
 
     /// Gets information about the user we're connected with.
-    pub async fn get_current_user(&self) -> Result<CurrentUser> {
+    pub async fn get_current_user(&self) -> ResultJson {
         self.fire(Request {
             body: None,
             multipart: None,
@@ -2975,7 +2936,7 @@ impl Http {
     }
 
     /// Gets all emojis of a guild.
-    pub async fn get_emojis(&self, guild_id: GuildId) -> Result<Vec<Emoji>> {
+    pub async fn get_emojis(&self, guild_id: GuildId) -> ResultJson {
         self.fire(Request {
             body: None,
             multipart: None,
@@ -2990,7 +2951,7 @@ impl Http {
     }
 
     /// Gets information about an emoji in a guild.
-    pub async fn get_emoji(&self, guild_id: GuildId, emoji_id: EmojiId) -> Result<Emoji> {
+    pub async fn get_emoji(&self, guild_id: GuildId, emoji_id: EmojiId) -> ResultJson {
         self.fire(Request {
             body: None,
             multipart: None,
@@ -3006,14 +2967,8 @@ impl Http {
     }
 
     /// Gets all emojis for the current application.
-    pub async fn get_application_emojis(&self) -> Result<Vec<Emoji>> {
-        // Why, discord...
-        #[derive(Deserialize)]
-        struct ApplicationEmojis {
-            items: Vec<Emoji>,
-        }
-
-        let result: ApplicationEmojis = self
+    pub async fn get_application_emojis(&self) -> ResultJson {
+        self
             .fire(Request {
                 body: None,
                 multipart: None,
@@ -3024,13 +2979,11 @@ impl Http {
                 },
                 params: None,
             })
-            .await?;
-
-        Ok(result.items)
+            .await
     }
 
     /// Gets information about an application emoji.
-    pub async fn get_application_emoji(&self, emoji_id: EmojiId) -> Result<Emoji> {
+    pub async fn get_application_emoji(&self, emoji_id: EmojiId) -> ResultJson {
         self.fire(Request {
             body: None,
             multipart: None,
@@ -3056,7 +3009,7 @@ impl Http {
         limit: Option<NonMaxU8>,
         guild_id: Option<GuildId>,
         exclude_ended: Option<bool>,
-    ) -> Result<Vec<Entitlement>> {
+    ) -> ResultJson {
         let (user_id_str, sku_ids_str, before_str, after_str, limit_str, guild_id_str, exclude_str);
         let mut params = ArrayVec::<_, 7>::new();
         if let Some(user_id) = user_id {
@@ -3102,7 +3055,7 @@ impl Http {
     }
 
     /// Gets current gateway.
-    pub async fn get_gateway(&self) -> Result<Gateway> {
+    pub async fn get_gateway(&self) -> ResultJson {
         self.fire(Request {
             body: None,
             multipart: None,
@@ -3115,7 +3068,7 @@ impl Http {
     }
 
     /// Fetches all of the global commands for your application.
-    pub async fn get_global_commands(&self) -> Result<Vec<Command>> {
+    pub async fn get_global_commands(&self) -> ResultJson {
         self.fire(Request {
             body: None,
             multipart: None,
@@ -3130,7 +3083,7 @@ impl Http {
     }
 
     /// Fetches all of the global commands for your application with localizations.
-    pub async fn get_global_commands_with_localizations(&self) -> Result<Vec<Command>> {
+    pub async fn get_global_commands_with_localizations(&self) -> ResultJson {
         self.fire(Request {
             body: None,
             multipart: None,
@@ -3145,7 +3098,7 @@ impl Http {
     }
 
     /// Fetches a global commands for your application by its Id.
-    pub async fn get_global_command(&self, command_id: CommandId) -> Result<Command> {
+    pub async fn get_global_command(&self, command_id: CommandId) -> ResultJson {
         self.fire(Request {
             body: None,
             multipart: None,
@@ -3161,7 +3114,7 @@ impl Http {
     }
 
     /// Gets guild information.
-    pub async fn get_guild(&self, guild_id: GuildId) -> Result<PartialGuild> {
+    pub async fn get_guild(&self, guild_id: GuildId) -> ResultJson {
         self.fire(Request {
             body: None,
             multipart: None,
@@ -3176,7 +3129,7 @@ impl Http {
     }
 
     /// Gets guild information with counts.
-    pub async fn get_guild_with_counts(&self, guild_id: GuildId) -> Result<PartialGuild> {
+    pub async fn get_guild_with_counts(&self, guild_id: GuildId) -> ResultJson {
         self.fire(Request {
             body: None,
             multipart: None,
@@ -3191,7 +3144,7 @@ impl Http {
     }
 
     /// Fetches all of the guild commands for your application for a specific guild.
-    pub async fn get_guild_commands(&self, guild_id: GuildId) -> Result<Vec<Command>> {
+    pub async fn get_guild_commands(&self, guild_id: GuildId) -> ResultJson {
         self.fire(Request {
             body: None,
             multipart: None,
@@ -3211,7 +3164,7 @@ impl Http {
     pub async fn get_guild_commands_with_localizations(
         &self,
         guild_id: GuildId,
-    ) -> Result<Vec<Command>> {
+    ) -> ResultJson {
         self.fire(Request {
             body: None,
             multipart: None,
@@ -3231,7 +3184,7 @@ impl Http {
         &self,
         guild_id: GuildId,
         command_id: CommandId,
-    ) -> Result<Command> {
+    ) -> ResultJson {
         self.fire(Request {
             body: None,
             multipart: None,
@@ -3251,7 +3204,7 @@ impl Http {
     pub async fn get_guild_commands_permissions(
         &self,
         guild_id: GuildId,
-    ) -> Result<Vec<CommandPermissions>> {
+    ) -> ResultJson {
         self.fire(Request {
             body: None,
             multipart: None,
@@ -3271,7 +3224,7 @@ impl Http {
         &self,
         guild_id: GuildId,
         command_id: CommandId,
-    ) -> Result<CommandPermissions> {
+    ) -> ResultJson {
         self.fire(Request {
             body: None,
             multipart: None,
@@ -3288,7 +3241,7 @@ impl Http {
     }
 
     /// Gets a guild widget information.
-    pub async fn get_guild_widget(&self, guild_id: GuildId) -> Result<GuildWidget> {
+    pub async fn get_guild_widget(&self, guild_id: GuildId) -> ResultJson {
         self.fire(Request {
             body: None,
             multipart: None,
@@ -3303,7 +3256,7 @@ impl Http {
     }
 
     /// Gets a guild preview.
-    pub async fn get_guild_preview(&self, guild_id: GuildId) -> Result<GuildPreview> {
+    pub async fn get_guild_preview(&self, guild_id: GuildId) -> ResultJson {
         self.fire(Request {
             body: None,
             multipart: None,
@@ -3318,7 +3271,7 @@ impl Http {
     }
 
     /// Gets a guild welcome screen information.
-    pub async fn get_guild_welcome_screen(&self, guild_id: GuildId) -> Result<GuildWelcomeScreen> {
+    pub async fn get_guild_welcome_screen(&self, guild_id: GuildId) -> ResultJson {
         self.fire(Request {
             body: None,
             multipart: None,
@@ -3333,7 +3286,7 @@ impl Http {
     }
 
     /// Gets integrations that a guild has.
-    pub async fn get_guild_integrations(&self, guild_id: GuildId) -> Result<Vec<Integration>> {
+    pub async fn get_guild_integrations(&self, guild_id: GuildId) -> ResultJson {
         self.fire(Request {
             body: None,
             multipart: None,
@@ -3348,7 +3301,7 @@ impl Http {
     }
 
     /// Gets all invites to a guild.
-    pub async fn get_guild_invites(&self, guild_id: GuildId) -> Result<Vec<RichInvite>> {
+    pub async fn get_guild_invites(&self, guild_id: GuildId) -> ResultJson {
         self.fire(Request {
             body: None,
             multipart: None,
@@ -3363,12 +3316,7 @@ impl Http {
     }
 
     /// Gets a guild's vanity URL if it has one.
-    pub async fn get_guild_vanity_url(&self, guild_id: GuildId) -> Result<String> {
-        #[derive(Deserialize)]
-        struct GuildVanityUrl {
-            code: String,
-        }
-
+    pub async fn get_guild_vanity_url(&self, guild_id: GuildId) -> ResultJson {
         self.fire(Request {
             body: None,
             multipart: None,
@@ -3380,7 +3328,6 @@ impl Http {
             params: None,
         })
         .await
-        .map(|x: GuildVanityUrl| x.code)
     }
 
     /// Gets the members of a guild. Optionally pass a `limit` and the Id of the user to offset the
@@ -3390,7 +3337,7 @@ impl Http {
         guild_id: GuildId,
         limit: Option<NonMaxU16>,
         after: Option<UserId>,
-    ) -> Result<Vec<Member>> {
+    ) -> ResultJson {
         let (limit_str, after_str);
         let mut params = ArrayVec::<_, 2>::new();
 
@@ -3427,7 +3374,7 @@ impl Http {
     }
 
     /// Gets the amount of users that can be pruned.
-    pub async fn get_guild_prune_count(&self, guild_id: GuildId, days: u8) -> Result<GuildPrune> {
+    pub async fn get_guild_prune_count(&self, guild_id: GuildId, days: u8) -> ResultJson {
         let days_str = days.to_arraystring();
         self.fire(Request {
             body: None,
@@ -3444,7 +3391,7 @@ impl Http {
 
     /// Gets regions that a guild can use. If a guild has the `VIP_REGIONS` feature enabled, then
     /// additional VIP-only regions are returned.
-    pub async fn get_guild_regions(&self, guild_id: GuildId) -> Result<Vec<VoiceRegion>> {
+    pub async fn get_guild_regions(&self, guild_id: GuildId) -> ResultJson {
         self.fire(Request {
             body: None,
             multipart: None,
@@ -3459,7 +3406,7 @@ impl Http {
     }
 
     /// Retrieves a specific role in a [`Guild`].
-    pub async fn get_guild_role(&self, guild_id: GuildId, role_id: RoleId) -> Result<Role> {
+    pub async fn get_guild_role(&self, guild_id: GuildId, role_id: RoleId) -> ResultJson {
         let mut value: Value = self
             .fire(Request {
                 body: None,
@@ -3482,7 +3429,7 @@ impl Http {
     }
 
     /// Retrieves a list of roles in a [`Guild`].
-    pub async fn get_guild_roles(&self, guild_id: GuildId) -> Result<ExtractMap<RoleId, Role>> {
+    pub async fn get_guild_roles(&self, guild_id: GuildId) -> ResultJson {
         let mut value: Value = self
             .fire(Request {
                 body: None,
@@ -3513,7 +3460,7 @@ impl Http {
         guild_id: GuildId,
         event_id: ScheduledEventId,
         with_user_count: bool,
-    ) -> Result<ScheduledEvent> {
+    ) -> ResultJson {
         let with_user_count_str = with_user_count.to_arraystring();
         self.fire(Request {
             body: None,
@@ -3534,7 +3481,7 @@ impl Http {
         &self,
         guild_id: GuildId,
         with_user_count: bool,
-    ) -> Result<Vec<ScheduledEvent>> {
+    ) -> ResultJson {
         let with_user_count_str = with_user_count.to_arraystring();
         self.fire(Request {
             body: None,
@@ -3558,7 +3505,7 @@ impl Http {
         limit: Option<NonMaxU8>,
         target: Option<UserPagination>,
         with_member: Option<bool>,
-    ) -> Result<Vec<ScheduledEventUser>> {
+    ) -> ResultJson {
         let (limit_str, with_member_str, id_str);
         let mut params = ArrayVec::<_, 3>::new();
         if let Some(limit) = limit {
@@ -3594,7 +3541,7 @@ impl Http {
     }
 
     /// Retrieves a list of stickers in a [`Guild`].
-    pub async fn get_guild_stickers(&self, guild_id: GuildId) -> Result<Vec<Sticker>> {
+    pub async fn get_guild_stickers(&self, guild_id: GuildId) -> ResultJson {
         let mut value: Value = self
             .fire(Request {
                 body: None,
@@ -3624,7 +3571,7 @@ impl Http {
         &self,
         guild_id: GuildId,
         sticker_id: StickerId,
-    ) -> Result<Sticker> {
+    ) -> ResultJson {
         let mut value: Value = self
             .fire(Request {
                 body: None,
@@ -3647,7 +3594,7 @@ impl Http {
     }
 
     /// Retrieves the webhooks for the given [`Guild`]'s Id.
-    pub async fn get_guild_webhooks(&self, guild_id: GuildId) -> Result<Vec<Webhook>> {
+    pub async fn get_guild_webhooks(&self, guild_id: GuildId) -> ResultJson {
         self.fire(Request {
             body: None,
             multipart: None,
@@ -3668,7 +3615,7 @@ impl Http {
         &self,
         target: Option<GuildPagination>,
         limit: Option<NonMaxU8>,
-    ) -> Result<Vec<GuildInfo>> {
+    ) -> ResultJson {
         let (limit_str, id_str);
         let mut params = ArrayVec::<_, 2>::new();
         if let Some(limit) = limit {
@@ -3701,7 +3648,7 @@ impl Http {
     /// This method only works for user tokens with the [`GuildsMembersRead`] OAuth2 scope.
     ///
     /// [`GuildsMembersRead`]: crate::model::application::Scope::GuildsMembersRead
-    pub async fn get_current_user_guild_member(&self, guild_id: GuildId) -> Result<Member> {
+    pub async fn get_current_user_guild_member(&self, guild_id: GuildId) -> ResultJson {
         let mut value: Value = self
             .fire(Request {
                 body: None,
@@ -3729,7 +3676,7 @@ impl Http {
         member_counts: bool,
         expiration: bool,
         event_id: Option<ScheduledEventId>,
-    ) -> Result<Invite> {
+    ) -> ResultJson {
         let (member_counts_str, expiration_str, event_id_str);
         let mut params = ArrayVec::<_, 3>::new();
 
@@ -3758,7 +3705,7 @@ impl Http {
     }
 
     /// Gets member of a guild.
-    pub async fn get_member(&self, guild_id: GuildId, user_id: UserId) -> Result<Member> {
+    pub async fn get_member(&self, guild_id: GuildId, user_id: UserId) -> ResultJson {
         let mut value: Value = self
             .fire(Request {
                 body: None,
@@ -3840,7 +3787,7 @@ impl Http {
     }
 
     /// Retrieves a specific [`StickerPack`] from it's [`StickerPackId`]
-    pub async fn get_sticker_pack(&self, sticker_pack_id: StickerPackId) -> Result<StickerPack> {
+    pub async fn get_sticker_pack(&self, sticker_pack_id: StickerPackId) -> ResultJson {
         self.fire(Request {
             body: None,
             multipart: None,
@@ -3855,12 +3802,7 @@ impl Http {
     }
 
     /// Retrieves a list of all nitro sticker packs.
-    pub async fn get_nitro_stickers(&self) -> Result<Vec<StickerPack>> {
-        #[derive(Deserialize)]
-        struct StickerPacks {
-            sticker_packs: Vec<StickerPack>,
-        }
-
+    pub async fn get_nitro_stickers(&self) -> ResultJson {
         self.fire(Request {
             body: None,
             multipart: None,
@@ -3870,7 +3812,6 @@ impl Http {
             params: None,
         })
         .await
-        .map(|s: StickerPacks| s.sticker_packs)
     }
 
     /// Gets all pins of a channel.
@@ -3896,7 +3837,7 @@ impl Http {
         reaction_type: &ReactionType,
         limit: u8,
         after: Option<UserId>,
-    ) -> Result<Vec<User>> {
+    ) -> ResultJson {
         let (limit_str, after_str);
         let mut params = ArrayVec::<_, 2>::new();
 
@@ -3924,7 +3865,7 @@ impl Http {
     }
 
     /// Gets all SKUs for the current application.
-    pub async fn get_skus(&self) -> Result<Vec<Sku>> {
+    pub async fn get_skus(&self) -> ResultJson {
         self.fire(Request {
             body: None,
             multipart: None,
@@ -3939,7 +3880,7 @@ impl Http {
     }
 
     /// Gets a sticker.
-    pub async fn get_sticker(&self, sticker_id: StickerId) -> Result<Sticker> {
+    pub async fn get_sticker(&self, sticker_id: StickerId) -> ResultJson {
         self.fire(Request {
             body: None,
             multipart: None,
@@ -3953,56 +3894,8 @@ impl Http {
         .await
     }
 
-    /// Gets the current unresolved incidents from Discord's Status API.
-    ///
-    /// Does not require authentication.
-    pub async fn get_unresolved_incidents(&self) -> Result<Vec<Incident>> {
-        #[derive(Deserialize)]
-        struct StatusResponse {
-            #[serde(default)]
-            incidents: Vec<Incident>,
-        }
-
-        let status: StatusResponse = self
-            .fire(Request {
-                body: None,
-                multipart: None,
-                headers: None,
-                method: LightMethod::Get,
-                route: Route::StatusIncidentsUnresolved,
-                params: None,
-            })
-            .await?;
-
-        Ok(status.incidents)
-    }
-
-    /// Gets the upcoming (planned) maintenances from Discord's Status API.
-    ///
-    /// Does not require authentication.
-    pub async fn get_upcoming_maintenances(&self) -> Result<Vec<Maintenance>> {
-        #[derive(Deserialize)]
-        struct StatusResponse {
-            #[serde(default)]
-            scheduled_maintenances: Vec<Maintenance>,
-        }
-
-        let status: StatusResponse = self
-            .fire(Request {
-                body: None,
-                multipart: None,
-                headers: None,
-                method: LightMethod::Get,
-                route: Route::StatusMaintenancesUpcoming,
-                params: None,
-            })
-            .await?;
-
-        Ok(status.scheduled_maintenances)
-    }
-
     /// Gets a user by Id.
-    pub async fn get_user(&self, user_id: UserId) -> Result<User> {
+    pub async fn get_user(&self, user_id: UserId) -> ResultJson {
         self.fire(Request {
             body: None,
             multipart: None,
@@ -4021,7 +3914,7 @@ impl Http {
     /// This method only works for user tokens with the [`Connections`] OAuth2 scope.
     ///
     /// [`Connections`]: crate::model::application::Scope::Connections
-    pub async fn get_user_connections(&self) -> Result<Vec<Connection>> {
+    pub async fn get_user_connections(&self) -> ResultJson {
         self.fire(Request {
             body: None,
             multipart: None,
@@ -4035,7 +3928,7 @@ impl Http {
 
 
     /// Gets all voice regions.
-    pub async fn get_voice_regions(&self) -> Result<Vec<VoiceRegion>> {
+    pub async fn get_voice_regions(&self) -> ResultJson {
         self.fire(Request {
             body: None,
             multipart: None,
@@ -4051,7 +3944,7 @@ impl Http {
     ///
     /// This method requires authentication, whereas [`Http::get_webhook_with_token`] and
     /// [`Http::get_webhook_from_url`] do not.
-    pub async fn get_webhook(&self, webhook_id: WebhookId) -> Result<Webhook> {
+    pub async fn get_webhook(&self, webhook_id: WebhookId) -> ResultJson {
         self.fire(Request {
             body: None,
             multipart: None,
@@ -4072,7 +3965,7 @@ impl Http {
         &self,
         webhook_id: WebhookId,
         token: &str,
-    ) -> Result<Webhook> {
+    ) -> ResultJson {
         self.fire(Request {
             body: None,
             multipart: None,
@@ -4091,7 +3984,7 @@ impl Http {
     ///
     /// This method does _not_ require authentication
     #[cfg(feature = "utils")]
-    pub async fn get_webhook_from_url(&self, url: &str) -> Result<Webhook> {
+    pub async fn get_webhook_from_url(&self, url: &str) -> ResultJson {
         let url = Url::parse(url)?;
         let (webhook_id, token) =
             crate::utils::parse_webhook(&url).ok_or(HttpError::InvalidWebhook)?;
@@ -4248,7 +4141,7 @@ impl Http {
         guild_id: GuildId,
         query: &str,
         limit: Option<NonMaxU16>,
-    ) -> Result<Vec<Member>> {
+    ) -> ResultJson {
         let limit_str = limit.unwrap_or(constants::MEMBER_FETCH_LIMIT).get().to_arraystring();
         let mut value: Value = self
             .fire(Request {
@@ -4280,7 +4173,7 @@ impl Http {
         guild_id: GuildId,
         days: u8,
         audit_log_reason: Option<&str>,
-    ) -> Result<GuildPrune> {
+    ) -> ResultJson {
         let days_str = days.to_arraystring();
         self.fire(Request {
             body: None,

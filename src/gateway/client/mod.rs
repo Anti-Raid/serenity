@@ -33,6 +33,7 @@ use std::sync::Arc;
 use std::time::Duration;
 
 use futures::future::BoxFuture;
+use serde_json::from_value;
 #[cfg(feature = "tracing_instrument")]
 use tracing::instrument;
 use tracing::{debug, warn};
@@ -53,7 +54,7 @@ use crate::internal::prelude::*;
 #[cfg(feature = "voice")]
 use crate::model::id::UserId;
 use crate::model::user::OnlineStatus;
-use crate::all::Token;
+use crate::all::{BotGateway, Token};
 
 /// A builder implementing [`IntoFuture`] building a [`Client`] to interact with Discord.
 #[must_use = "Builders do nothing unless they are awaited"]
@@ -174,7 +175,17 @@ impl IntoFuture for ClientBuilder {
         let http = self.http;
 
         Box::pin(async move {
-            let (ws_url, shard_total, max_concurrency) = match http.get_bot_gateway().await {
+            let json_resp = match http.get_bot_gateway().await {
+                Ok(response) => response,
+                Err(err) => {
+                    warn!("HTTP request to get gateway URL failed: {err}");
+                    return Err(err);
+                },
+            };
+
+            let get_bot_gateway = from_value::<BotGateway>(json_resp);
+
+            let (ws_url, shard_total, max_concurrency) = match get_bot_gateway {
                 Ok(response) => (
                     Arc::from(response.url),
                     response.shards,
@@ -351,7 +362,8 @@ impl Client {
     #[cfg_attr(feature = "tracing_instrument", instrument(skip(self)))]
     pub async fn start_autosharded(&mut self) -> Result<()> {
         let (end, total) = {
-            let res = self.http.get_bot_gateway().await?;
+            let json_res = self.http.get_bot_gateway().await?;
+            let res = from_value::<BotGateway>(json_res)?;
             (res.shards.get() - 1, res.shards)
         };
 

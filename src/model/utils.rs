@@ -210,15 +210,6 @@ where
     deserialize_colours::<D>(vec_str).map(Some)
 }
 
-pub fn discord_colours<'de, D>(deserializer: D) -> Result<Vec<Colour>, D::Error>
-where
-    D: Deserializer<'de>,
-{
-    let vec_str: Vec<CowStr<'_>> = Deserialize::deserialize(deserializer)?;
-
-    deserialize_colours::<D>(vec_str)
-}
-
 fn deserialize_colours<'de, D>(vec_str: Vec<CowStr<'_>>) -> Result<Vec<Colour>, D::Error>
 where
     D: Deserializer<'de>,

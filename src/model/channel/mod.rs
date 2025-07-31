@@ -2,11 +2,9 @@
 
 mod attachment;
 mod channel_id;
-mod embed;
 mod followed_channel;
 mod guild_channel;
 mod interaction_channel;
-mod message;
 mod private_channel;
 mod reaction;
 mod thread;
@@ -18,11 +16,9 @@ use serde::ser::SerializeMap as _;
 use serde_json::value::RawValue;
 
 pub use self::attachment::*;
-pub use self::embed::*;
 pub use self::followed_channel::*;
 pub use self::guild_channel::*;
 pub use self::interaction_channel::*;
-pub use self::message::*;
 pub use self::private_channel::*;
 pub use self::reaction::*;
 pub use self::thread::*;
@@ -307,7 +303,7 @@ impl std::convert::TryFrom<PermissionOverwriteData> for PermissionOverwrite {
     fn try_from(data: PermissionOverwriteData) -> StdResult<Self, Self::Error> {
         let kind = match data.kind {
             0 => PermissionOverwriteType::Role(data.id.get().into()),
-            1 => PermissionOverwriteType::Member(data.id.into()),
+            1 => PermissionOverwriteType::Member(data.id.get().into()),
             raw => return Err(InvalidPermissionOverwriteType(raw)),
         };
 
@@ -323,7 +319,7 @@ impl From<PermissionOverwrite> for PermissionOverwriteData {
     fn from(data: PermissionOverwrite) -> Self {
         let (kind, id) = match data.kind {
             PermissionOverwriteType::Role(id) => (0, id.get().into()),
-            PermissionOverwriteType::Member(id) => (1, id.into()),
+            PermissionOverwriteType::Member(id) => (1, id.get().into()),
         };
 
         PermissionOverwriteData {

@@ -1,7 +1,6 @@
 //! A set of utilities to help with common use cases that are not required to fully use the
 //! library.
 
-mod custom_message;
 mod formatted_timestamp;
 mod message_builder;
 
@@ -10,7 +9,6 @@ use std::num::NonZeroU16;
 pub use formatted_timestamp::*;
 use url::Url;
 
-pub use self::custom_message::CustomMessage;
 pub use self::message_builder::{Content, ContentModifier, EmbedMessageBuilding, MessageBuilder};
 use crate::model::prelude::*;
 
