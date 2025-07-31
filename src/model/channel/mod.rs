@@ -13,7 +13,7 @@ use std::fmt;
 
 use serde::de::Error as DeError;
 use serde::ser::SerializeMap as _;
-use serde_json::value::RawValue;
+use serde_json::value::Map as JsonMap;
 
 pub use self::attachment::*;
 pub use self::followed_channel::*;
@@ -171,20 +171,23 @@ impl Channel {
     }
 }
 
-fn extract_type<'de, D>(deserializer: D) -> StdResult<(u64, &'de RawValue), D::Error>
+fn deserialize_val<T, E>(val: Value) -> Result<T, E>
+where
+    T: serde::de::DeserializeOwned,
+    E: serde::de::Error,
+{
+    T::deserialize(val).map_err(serde::de::Error::custom)
+}
+
+fn extract_type<'de, D>(deserializer: D) -> StdResult<(u64, Value), D::Error>
 where
     D: Deserializer<'de>,
 {
-    #[derive(Deserialize)]
-    struct ChannelRaw {
-        #[serde(rename = "type")]
-        kind: u64,
-    }
+    let map = JsonMap::deserialize(deserializer)?;
+    let raw_kind = map.get("type").ok_or_else(|| DeError::missing_field("type"))?.clone();
+    let value = Value::from(map);
 
-    let raw_data = <&RawValue>::deserialize(deserializer)?;
-    let raw = ChannelRaw::deserialize(raw_data).map_err(DeError::custom)?;
-
-    Ok((raw.kind, raw_data))
+    Ok((deserialize_val(raw_kind)?, value))
 }
 
 // Manual impl needed to emulate integer enum tags
