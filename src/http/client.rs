@@ -36,6 +36,8 @@ use crate::constants;
 use crate::internal::prelude::*;
 use crate::model::prelude::*;
 
+pub type ResultJson = Result<serde_json::Value>;
+
 // NOTE: This cannot be passed in from outside, due to `Cell` being !Send.
 struct SerializeIter<I>(Cell<Option<I>>);
 
@@ -499,7 +501,7 @@ impl Http {
         interaction_token: &str,
         map: &impl serde::Serialize,
         files: Vec<CreateAttachment<'_>>,
-    ) -> Result<Message> {
+    ) -> ResultJson {
         let mut request = Request {
             body: None,
             multipart: None,
@@ -1467,7 +1469,7 @@ impl Http {
         message_id: MessageId,
         map: &impl serde::Serialize,
         new_attachments: Vec<CreateAttachment<'_>>,
-    ) -> Result<Message> {
+    ) -> ResultJson {
         let mut request = Request {
             body: None,
             multipart: None,
@@ -1499,7 +1501,7 @@ impl Http {
         &self,
         interaction_token: &str,
         message_id: MessageId,
-    ) -> Result<Message> {
+    ) -> ResultJson {
         self.fire(Request {
             body: None,
             multipart: None,
@@ -1734,7 +1736,7 @@ impl Http {
         message_id: MessageId,
         map: &impl serde::Serialize,
         new_attachments: Vec<CreateAttachment<'_>>,
-    ) -> Result<Message> {
+    ) -> ResultJson {
         let mut request = Request {
             body: None,
             multipart: None,
@@ -1767,7 +1769,7 @@ impl Http {
         &self,
         channel_id: ChannelId,
         message_id: MessageId,
-    ) -> Result<Message> {
+    ) -> ResultJson {
         self.fire(Request {
             body: None,
             multipart: None,
@@ -1845,7 +1847,7 @@ impl Http {
     pub async fn get_original_interaction_response(
         &self,
         interaction_token: &str,
-    ) -> Result<Message> {
+    ) -> ResultJson {
         self.fire(Request {
             body: None,
             multipart: None,
@@ -1866,7 +1868,7 @@ impl Http {
         interaction_token: &str,
         map: &impl serde::Serialize,
         new_attachments: Vec<CreateAttachment<'_>>,
-    ) -> Result<Message> {
+    ) -> ResultJson {
         let mut request = Request {
             body: None,
             multipart: None,
@@ -2144,7 +2146,7 @@ impl Http {
         wait: bool,
         files: Vec<CreateAttachment<'_>>,
         map: &impl serde::Serialize,
-    ) -> Result<Option<Message>> {
+    ) -> ResultJson {
         self.execute_webhook_(webhook_id, thread_id, token, wait, files, map, false).await
     }
 
@@ -2162,7 +2164,7 @@ impl Http {
         wait: bool,
         files: Vec<CreateAttachment<'_>>,
         map: &impl serde::Serialize,
-    ) -> Result<Option<Message>> {
+    ) -> ResultJson {
         self.execute_webhook_(webhook_id, thread_id, token, wait, files, map, true).await
     }
 
@@ -2176,7 +2178,7 @@ impl Http {
         files: Vec<CreateAttachment<'_>>,
         map: &impl serde::Serialize,
         with_components: bool,
-    ) -> Result<Option<Message>> {
+    ) -> ResultJson {
         let (thread_id_str, with_components_str);
         let wait_str = wait.to_arraystring();
         let mut params = ArrayVec::<_, 3>::new();
@@ -2216,7 +2218,7 @@ impl Http {
 
         let response = self.request(request).await?;
 
-        Ok(if response.status() == StatusCode::NO_CONTENT { None } else { response.json().await? })
+        Ok(if response.status() == StatusCode::NO_CONTENT { serde_json::Value::Null } else { response.json().await? })
     }
 
     // Gets a webhook's message by Id
@@ -2226,7 +2228,7 @@ impl Http {
         thread_id: Option<ThreadId>,
         token: &str,
         message_id: MessageId,
-    ) -> Result<Message> {
+    ) -> ResultJson {
         let thread_id_str;
         let mut params = None;
 
@@ -2259,7 +2261,7 @@ impl Http {
         message_id: MessageId,
         map: &impl serde::Serialize,
         new_attachments: Vec<CreateAttachment<'_>>,
-    ) -> Result<Message> {
+    ) -> ResultJson {
         let thread_id_str;
         let mut params = None;
 
@@ -2929,7 +2931,7 @@ impl Http {
         &self,
         channel_id: GenericChannelId,
         message_id: MessageId,
-    ) -> Result<Message> {
+    ) -> ResultJson {
         self.fire(Request {
             body: None,
             multipart: None,
@@ -3783,7 +3785,7 @@ impl Http {
         &self,
         channel_id: GenericChannelId,
         message_id: MessageId,
-    ) -> Result<Message> {
+    ) -> ResultJson {
         self.fire(Request {
             body: None,
             multipart: None,
@@ -3804,7 +3806,7 @@ impl Http {
         channel_id: GenericChannelId,
         target: Option<MessagePagination>,
         limit: Option<NonMaxU8>,
-    ) -> Result<Vec<Message>> {
+    ) -> ResultJson {
         let (limit_str, id_str);
         let mut params = ArrayVec::<_, 2>::new();
 
@@ -3872,7 +3874,7 @@ impl Http {
     }
 
     /// Gets all pins of a channel.
-    pub async fn get_pins(&self, channel_id: GenericChannelId) -> Result<Vec<Message>> {
+    pub async fn get_pins(&self, channel_id: GenericChannelId) -> ResultJson {
         self.fire(Request {
             body: None,
             multipart: None,
@@ -4149,7 +4151,7 @@ impl Http {
         channel_id: GenericChannelId,
         files: Vec<CreateAttachment<'_>>,
         map: &impl serde::Serialize,
-    ) -> Result<Message> {
+    ) -> ResultJson {
         let mut request = Request {
             body: None,
             multipart: None,
