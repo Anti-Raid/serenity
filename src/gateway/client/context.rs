@@ -17,13 +17,6 @@ use crate::model::prelude::*;
 /// acts as a general high-level interface over the low-level [`http`] module, plus the associated
 /// [`Shard`] which received the event.
 ///
-/// The context contains "shortcuts", like for interacting with the shard. Methods like
-/// [`Self::set_activity`] will unlock the shard and perform an update for you to save a bit of
-/// work.
-///
-/// A context will only live for the event it was dispatched for. After the event handler finished,
-/// it is destroyed and will not be re-used.
-///
 /// [`Shard`]: crate::gateway::Shard
 /// [`http`]: crate::http
 #[derive(Clone)]
@@ -173,24 +166,6 @@ impl Context {
             presences,
             filter,
             nonce,
-        });
-    }
-
-    /// Indicates to the gateway that the client wants to join, move, or disconnect from a voice
-    /// channel.
-    #[cfg(feature = "voice")]
-    pub fn update_voice_state(
-        &self,
-        guild_id: GuildId,
-        channel_id: Option<ChannelId>,
-        self_mute: bool,
-        self_deaf: bool,
-    ) {
-        self.send_to_shard(ShardRunnerMessage::UpdateVoiceState {
-            guild_id,
-            channel_id,
-            self_mute,
-            self_deaf,
         });
     }
 

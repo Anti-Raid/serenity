@@ -4,8 +4,6 @@ use nonmax::NonMaxU64;
 use serde::Serialize;
 
 use crate::model::prelude::*;
-#[cfg(feature = "model")]
-use crate::model::utils::icon_url;
 
 /// Partial information about a [`Guild`]. This does not include information like member data.
 ///
@@ -25,115 +23,28 @@ pub struct PartialGuild {
     pub id: GuildId,
     /// The name of the guild.
     pub name: FixedString,
-    /// The hash of the icon used by the guild.
-    ///
-    /// In the client, this appears on the guild list on the left-hand side.
-    pub icon: Option<ImageHash>,
-    /// Icon hash, returned when in the template object
-    pub icon_hash: Option<ImageHash>,
-    /// An identifying hash of the guild's splash icon.
-    ///
-    /// If the `InviteSplash` feature is enabled, this can be used to generate a URL to a splash
-    /// image.
-    pub splash: Option<ImageHash>,
-    /// An identifying hash of the guild discovery's splash icon.
-    ///
-    /// **Note**: Only present for guilds with the `DISCOVERABLE` feature.
-    pub discovery_splash: Option<ImageHash>,
     // Omitted `owner` field because only Http::get_guilds uses it, which returns GuildInfo
     /// The Id of the [`User`] who owns the guild.
     pub owner_id: UserId,
-    // Omitted `permissions` field because only Http::get_guilds uses it, which returns GuildInfo
-    // Omitted `region` field because it is deprecated (see Discord docs)
-    /// Information about the voice afk channel.
-    #[serde(flatten)]
-    pub afk_metadata: Option<AfkMetadata>,
-    /// Whether or not the guild widget is enabled.
-    pub widget_enabled: Option<bool>,
-    /// The channel id that the widget will generate an invite to, or null if set to no invite
-    pub widget_channel_id: Option<ChannelId>,
     /// Indicator of the current verification level of the guild.
     pub verification_level: VerificationLevel,
-    /// Indicator of whether notifications for all messages are enabled by
-    /// default in the guild.
-    pub default_message_notifications: DefaultMessageNotificationLevel,
     /// Default explicit content filter level.
     pub explicit_content_filter: ExplicitContentFilter,
     /// A mapping of the guild's roles.
     pub roles: ExtractMap<RoleId, Role>,
-    /// The guild features. More information available at [`discord documentation`].
-    ///
-    /// The following is a list of known features:
-    /// - `ANIMATED_ICON`
-    /// - `BANNER`
-    /// - `COMMERCE`
-    /// - `COMMUNITY`
-    /// - `DISCOVERABLE`
-    /// - `FEATURABLE`
-    /// - `INVITE_SPLASH`
-    /// - `MEMBER_VERIFICATION_GATE_ENABLED`
-    /// - `MONETIZATION_ENABLED`
-    /// - `MORE_STICKERS`
-    /// - `NEWS`
-    /// - `PARTNERED`
-    /// - `PREVIEW_ENABLED`
-    /// - `PRIVATE_THREADS`
-    /// - `ROLE_ICONS`
-    /// - `SEVEN_DAY_THREAD_ARCHIVE`
-    /// - `THREE_DAY_THREAD_ARCHIVE`
-    /// - `TICKETED_EVENTS_ENABLED`
-    /// - `VANITY_URL`
-    /// - `VERIFIED`
-    /// - `VIP_REGIONS`
-    /// - `WELCOME_SCREEN_ENABLED`
-    /// - `THREE_DAY_THREAD_ARCHIVE`
-    /// - `SEVEN_DAY_THREAD_ARCHIVE`
-    /// - `PRIVATE_THREADS`
-    ///
-    ///
-    /// [`discord documentation`]: https://discord.com/developers/docs/resources/guild#guild-object-guild-features
-    pub features: FixedArray<FixedString>,
     /// Indicator of whether the guild requires multi-factor authentication for [`Role`]s or
     /// [`User`]s with moderation permissions.
     pub mfa_level: MfaLevel,
-    /// Application ID of the guild creator if it is bot-created.
-    pub application_id: Option<ApplicationId>,
-    /// The ID of the channel to which system messages are sent.
-    pub system_channel_id: Option<ChannelId>,
-    /// System channel flags.
-    pub system_channel_flags: SystemChannelFlags,
-    /// The id of the channel where rules and/or guidelines are displayed.
-    ///
-    /// **Note**: Only available on `COMMUNITY` guild, see [`Self::features`].
-    pub rules_channel_id: Option<ChannelId>,
     /// The maximum number of presences for the guild. The default value is currently 25000.
     ///
     /// **Note**: It is in effect when it is `None`.
     pub max_presences: Option<NonMaxU64>,
     /// The maximum number of members for the guild.
     pub max_members: Option<NonMaxU64>,
-    /// The vanity url code for the guild, if it has one.
-    pub vanity_url_code: Option<FixedString>,
-    /// The server's description, if it has one.
-    pub description: Option<FixedString>,
-    /// The guild's banner, if it has one.
-    pub banner: Option<FixedString>,
     /// The server's premium boosting level.
     pub premium_tier: PremiumTier,
     /// The total number of users currently boosting this server.
     pub premium_subscription_count: Option<NonMaxU64>,
-    /// The preferred locale of this guild only set if guild has the "DISCOVERABLE" feature,
-    /// defaults to en-US.
-    pub preferred_locale: FixedString,
-    /// The id of the channel where admins and moderators of Community guilds receive notices from
-    /// Discord.
-    ///
-    /// **Note**: Only available on `COMMUNITY` guild, see [`Self::features`].
-    pub public_updates_channel_id: Option<ChannelId>,
-    /// The maximum amount of users in a video channel.
-    pub max_video_channel_users: Option<NonMaxU64>,
-    /// The maximum amount of users in a stage video channel
-    pub max_stage_video_channel_users: Option<NonMaxU64>,
     /// Approximate number of members in this guild.
     pub approximate_member_count: Option<NonMaxU64>,
     /// Approximate number of non-offline members in this guild.
@@ -142,10 +53,6 @@ pub struct PartialGuild {
     ///
     /// [`discord support article`]: https://support.discord.com/hc/en-us/articles/1500005389362-NSFW-Server-Designation
     pub nsfw_level: NsfwLevel,
-    /// All of the guild's custom stickers.
-    pub stickers: ExtractMap<StickerId, Sticker>,
-    /// Whether the guild has the boost progress bar enabled
-    pub premium_progress_bar_enabled: bool,
 
     #[serde(flatten)]
     pub extra_info: HashMap<String, serde_json::Value>,
@@ -162,34 +69,6 @@ impl PartialGuild {
         Self::user_permissions_in_(
             None,
             member.user.id,
-            &member.roles,
-            self.id,
-            &self.roles,
-            self.owner_id,
-        )
-    }
-
-    /// Calculate a [`PartialMember`]'s permissions in the guild.
-    ///
-    /// You likely want to use PartialGuild::partial_member_permissions_in instead as this function
-    /// does not consider permission overwrites.
-    ///
-    /// # Panics
-    ///
-    /// Panics if the passed [`UserId`] does not match the [`PartialMember`] id, if user is Some.
-    #[must_use]
-    pub fn partial_member_permissions(
-        &self,
-        member_id: UserId,
-        member: &PartialMember,
-    ) -> Permissions {
-        if let Some(user) = &member.user {
-            assert_eq!(user.id, member_id, "User::id does not match provided PartialMember");
-        }
-
-        Self::user_permissions_in_(
-            None,
-            member_id,
             &member.roles,
             self.id,
             &self.roles,
@@ -306,44 +185,6 @@ impl PartialGuild {
         } else {
             Some(rhs.user.id)
         }
-    }
-
-    /// Calculate a [`PartialMember`]'s permissions in a given channel in a guild.
-    ///
-    /// # Panics
-    ///
-    /// Panics if the passed [`UserId`] does not match the [`PartialMember`] id, if user is Some.
-    #[must_use]
-    pub fn partial_member_permissions_in(
-        &self,
-        channel: &GuildChannel,
-        member_id: UserId,
-        member: &PartialMember,
-    ) -> Permissions {
-        if let Some(user) = &member.user {
-            assert_eq!(user.id, member_id, "User::id does not match provided PartialMember");
-        }
-
-        Self::user_permissions_in_(
-            Some(channel),
-            member_id,
-            &member.roles,
-            self.id,
-            &self.roles,
-            self.owner_id,
-        )
-    }
-
-    /// Returns a formatted URL of the guild's icon, if the guild has an icon.
-    #[must_use]
-    pub fn icon_url(&self) -> Option<String> {
-        icon_url(self.id, self.icon.as_ref())
-    }
-
-    /// Returns a formatted URL of the guild's banner, if the guild has a banner.
-    #[must_use]
-    pub fn banner_url(&self) -> Option<String> {
-        self.banner.as_ref().map(|banner| cdn!("/banners/{}/{}.webp", self.id, banner))
     }
 
     /// Calculate a [`Member`]'s permissions in a given channel in the guild.

@@ -175,16 +175,6 @@ impl From<EmojiId> for ReactionType {
     }
 }
 
-impl From<EmojiIdentifier> for ReactionType {
-    fn from(emoji_id: EmojiIdentifier) -> ReactionType {
-        ReactionType::Custom {
-            animated: emoji_id.animated,
-            id: emoji_id.id,
-            name: Some(emoji_id.name),
-        }
-    }
-}
-
 #[derive(Debug)]
 pub struct ReactionConversionError;
 

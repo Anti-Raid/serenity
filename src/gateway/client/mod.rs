@@ -40,53 +40,40 @@ use tracing::{debug, warn};
 
 pub use self::context::Context;
 pub use self::event_handler::EventHandler;
-#[cfg(feature = "voice")]
-use super::VoiceGatewayManager;
 use super::{
-    ActivityData,
     DEFAULT_WAIT_BETWEEN_SHARD_START,
-    PresenceData,
     ShardManager,
     ShardManagerOptions,
 };
 use crate::http::Http;
 use crate::internal::prelude::*;
-#[cfg(feature = "voice")]
-use crate::model::id::UserId;
-use crate::model::user::OnlineStatus;
-use crate::all::{BotGateway, Token};
+use crate::all::{SecretString, BotGateway};
 
 /// A builder implementing [`IntoFuture`] building a [`Client`] to interact with Discord.
 #[must_use = "Builders do nothing unless they are awaited"]
 pub struct ClientBuilder {
-    token: Token,
+    token: SecretString,
     data: Option<Arc<dyn std::any::Any + Send + Sync>>,
     http: Arc<Http>,
-    #[cfg(feature = "voice")]
-    voice_manager: Option<Arc<dyn VoiceGatewayManager>>,
     event_handler: Option<Arc<dyn EventHandler>>,
-    presence: PresenceData,
     wait_time_between_shard_start: Duration,
 }
 
 impl ClientBuilder {
     /// Construct a new builder to call methods on for the client construction. The `token` will
     /// automatically be prefixed "Bot " if not already.
-    pub fn new(token: Token) -> Self {
+    pub fn new(token: SecretString) -> Self {
         Self::new_with_http(token.clone(), Arc::new(Http::new(token)))
     }
 
     /// Construct a new builder with a [`Http`] instance to calls methods on for the client
     /// construction.
-    pub fn new_with_http(token: Token, http: Arc<Http>) -> Self {
+    pub fn new_with_http(token: SecretString, http: Arc<Http>) -> Self {
         Self {
             token,
             http,
             data: None,
-            #[cfg(feature = "voice")]
-            voice_manager: None,
             event_handler: None,
-            presence: PresenceData::default(),
             wait_time_between_shard_start: DEFAULT_WAIT_BETWEEN_SHARD_START,
         }
     }
@@ -110,24 +97,6 @@ impl ClientBuilder {
         self
     }
 
-    /// Sets the voice gateway handler to be used. It will receive voice events sent over the
-    /// gateway and then consider - based on its settings - whether to dispatch a command.
-    #[cfg(feature = "voice")]
-    pub fn voice_manager<V>(mut self, voice_manager: impl Into<Arc<V>>) -> Self
-    where
-        V: VoiceGatewayManager + 'static,
-    {
-        self.voice_manager = Some(voice_manager.into());
-        self
-    }
-
-    /// Gets the voice manager, if already initialized. See [`Self::voice_manager`] for more info.
-    #[cfg(feature = "voice")]
-    #[must_use]
-    pub fn get_voice_manager(&self) -> Option<Arc<dyn VoiceGatewayManager>> {
-        self.voice_manager.clone()
-    }
-
     /// Adds an event handler with multiple methods for each possible event.
     pub fn event_handler<H>(mut self, event_handler: impl Into<Arc<H>>) -> Self
     where
@@ -142,26 +111,6 @@ impl ClientBuilder {
     pub fn get_event_handler(&self) -> Option<&Arc<dyn EventHandler>> {
         self.event_handler.as_ref()
     }
-
-    /// Sets the initial activity.
-    pub fn activity(mut self, activity: ActivityData) -> Self {
-        self.presence.activity = Some(activity);
-
-        self
-    }
-
-    /// Sets the initial status.
-    pub fn status(mut self, status: OnlineStatus) -> Self {
-        self.presence.status = status;
-
-        self
-    }
-
-    /// Gets the initial presence. See [`Self::activity`] and [`Self::status`] for more info.
-    #[must_use]
-    pub fn get_presence(&self) -> &PresenceData {
-        &self.presence
-    }
 }
 
 impl IntoFuture for ClientBuilder {
@@ -171,7 +120,6 @@ impl IntoFuture for ClientBuilder {
 
     fn into_future(self) -> Self::IntoFuture {
         let data = self.data.unwrap_or(Arc::new(()));
-        let presence = self.presence;
         let http = self.http;
 
         Box::pin(async move {
@@ -201,21 +149,16 @@ impl IntoFuture for ClientBuilder {
                 token: self.token,
                 data: Arc::clone(&data),
                 event_handler: self.event_handler,
-                #[cfg(feature = "voice")]
-                voice_manager: self.voice_manager.clone(),
                 ws_url: Arc::clone(&ws_url),
                 shard_total,
                 max_concurrency,
                 http: Arc::clone(&http),
-                presence: Some(presence),
                 wait_time_between_shard_start: self.wait_time_between_shard_start,
             });
 
             let client = Client {
                 data,
                 shard_manager,
-                #[cfg(feature = "voice")]
-                voice_manager: self.voice_manager,
                 ws_url,
                 http,
             };
@@ -246,12 +189,6 @@ pub struct Client {
     ///
     /// This is the brains, managing shards (websocket connections) and bot lifecycle.
     pub shard_manager: ShardManager,
-    /// The voice manager for the client.
-    ///
-    /// This is an ergonomic structure for interfacing over shards' voice
-    /// connections.
-    #[cfg(feature = "voice")]
-    pub voice_manager: Option<Arc<dyn VoiceGatewayManager + 'static>>,
     /// URL that the client's shards will use to connect to the gateway.
     pub ws_url: Arc<str>,
     /// An HTTP client.
@@ -259,7 +196,7 @@ pub struct Client {
 }
 
 impl Client {
-    pub fn builder(token: Token) -> ClientBuilder {
+    pub fn builder(token: SecretString) -> ClientBuilder {
         ClientBuilder::new(token)
     }
 
@@ -312,8 +249,6 @@ impl Client {
     /// # Errors
     ///
     /// Returns [`Error::Gateway`] when all shards have shutdown due to an error.
-    /// Returns [`Error::Http`] if fetching the current User fails when initialising a voice
-    /// manager.
     ///
     /// [gateway docs]: crate::gateway#sharding
     #[cfg_attr(feature = "tracing_instrument", instrument(skip(self)))]
@@ -355,8 +290,6 @@ impl Client {
     /// # Errors
     ///
     /// Returns [`Error::Gateway`] when all shards have shutdown due to an error.
-    /// Returns [`Error::Http`] if fetching the current User fails when initialising a voice
-    /// manager.
     ///
     /// [gateway docs]: crate::gateway#sharding
     #[cfg_attr(feature = "tracing_instrument", instrument(skip(self)))]
@@ -422,8 +355,6 @@ impl Client {
     /// # Errors
     ///
     /// Returns [`Error::Gateway`] when all shards have shutdown due to an error.
-    /// Returns [`Error::Http`] if fetching the current User fails when initialising a voice
-    /// manager.
     ///
     /// [gateway docs]: crate::gateway#sharding
     #[cfg_attr(feature = "tracing_instrument", instrument(skip(self)))]
@@ -465,8 +396,6 @@ impl Client {
     /// # Errors
     ///
     /// Returns [`Error::Gateway`] when all shards have shutdown due to an error.
-    /// Returns [`Error::Http`] if fetching the current User fails when initialising a voice
-    /// manager.
     ///
     /// [Gateway docs]: crate::gateway#sharding
     #[cfg_attr(feature = "tracing_instrument", instrument(skip(self)))]
@@ -508,8 +437,6 @@ impl Client {
     /// # Errors
     ///
     /// Returns [`Error::Gateway`] when all shards have shutdown due to an error.
-    /// Returns [`Error::Http`] if fetching the current User fails when initialising a voice
-    /// manager.
     ///
     /// [Gateway docs]: crate::gateway#sharding
     #[cfg_attr(feature = "tracing_instrument", instrument(skip(self)))]
@@ -524,18 +451,6 @@ impl Client {
         end_shard: u16,
         total_shards: NonZeroU16,
     ) -> Result<()> {
-        #[cfg(feature = "voice")]
-        if let Some(voice_manager) = &self.voice_manager {
-            let cache_user_id: Option<UserId> = None;
-
-            let user_id = match cache_user_id {
-                Some(u) => u,
-                None => self.http.get_current_user().await?.id,
-            };
-
-            voice_manager.initialise(total_shards, user_id).await;
-        }
-
         let init = end_shard - start_shard + 1;
 
         debug!("Initializing shard info: {} - {}/{}", start_shard, init, total_shards);

@@ -33,9 +33,6 @@ pub struct Invite {
     /// This can be [`None`] for invites created by Discord such as invite-widgets or vanity invite
     /// links.
     pub inviter: Option<User>,
-    /// The expiration date of this invite, returned from `Http::get_invite` when `with_expiration`
-    /// is true.
-    pub expires_at: Option<Timestamp>,
 }
 
 /// A minimal amount of information about the channel an invite points to.

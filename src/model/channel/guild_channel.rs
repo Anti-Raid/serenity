@@ -1,4 +1,4 @@
-use std::fmt;
+use std::{collections::HashMap, fmt};
 
 use nonmax::{NonMaxU16, NonMaxU32};
 
@@ -19,16 +19,9 @@ pub struct BaseGuildChannel {
     pub kind: ChannelType,
     /// The name of the channel. (1-100 characters)
     pub name: FixedString<u16>,
-    /// The Id of the last message sent in the channel.
-    pub last_message_id: Option<MessageId>,
-    /// The timestamp of the time a pin was most recently made.
-    pub last_pin_timestamp: Option<Timestamp>,
-    /// A rate limit that applies per user and excludes bots.
-    ///
-    /// **Note**: This is only available for text channels excluding news channels.
-    #[doc(alias = "slowmode")]
-    #[serde(default)]
-    pub rate_limit_per_user: Option<NonMaxU16>,
+
+    #[serde(flatten)]
+    pub extra_info: HashMap<String, serde_json::Value>,
 }
 
 /// Represents a channel in a [`Guild`], excluding thread information.

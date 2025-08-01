@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use std::fmt;
 
 use crate::model::prelude::*;
@@ -14,10 +15,6 @@ pub struct PrivateChannel {
     ///
     /// Can be used to calculate the first message's creation date.
     pub id: ChannelId,
-    /// The Id of the last message sent.
-    pub last_message_id: Option<MessageId>,
-    /// Timestamp of the last time a [`Message`] was pinned.
-    pub last_pin_timestamp: Option<Timestamp>,
     /// Indicator of the type of channel this is.
     ///
     /// This should always be [`ChannelType::Private`].
@@ -26,6 +23,9 @@ pub struct PrivateChannel {
     /// The recipient to the private channel.
     #[serde(with = "single_recipient", rename = "recipients")]
     pub recipient: User,
+
+    #[serde(flatten)]
+    pub extra_info: HashMap<String, serde_json::Value>,
 }
 
 impl fmt::Display for PrivateChannel {

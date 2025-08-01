@@ -24,7 +24,6 @@ mod error;
 mod multipart;
 mod request;
 mod routing;
-mod typing;
 
 use std::sync::Arc;
 
@@ -36,7 +35,6 @@ pub use self::error::*;
 pub use self::multipart::*;
 pub use self::request::*;
 pub use self::routing::*;
-pub use self::typing::*;
 use crate::model::prelude::*;
 
 /// This trait will be required by functions that need [`Http`] and can optionally use a [`Cache`]

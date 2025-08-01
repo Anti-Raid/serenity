@@ -14,8 +14,6 @@ use crate::constants::{Opcode};
 use crate::internal::prelude::*;
 use crate::model::event::GatewayEvent;
 use crate::model::gateway::ShardInfo;
-#[cfg(feature = "voice")]
-use crate::model::id::ChannelId;
 use crate::model::id::{GuildId, UserId};
 use crate::{Error, Result};
 
@@ -46,13 +44,6 @@ enum WebSocketMessageData<'a> {
         shard: &'a ShardInfo,
         #[serde(rename = "__sandwich_ext")]
         sandwich_ext: SandwichExt<'a>
-    },
-    #[cfg(feature = "voice")]
-    VoiceStateUpdate {
-        guild_id: GuildId,
-        channel_id: Option<ChannelId>,
-        self_mute: bool,
-        self_deaf: bool,
     },
     Resume {
         session_id: &'a str,
@@ -226,33 +217,6 @@ impl WsClient {
                 sandwich_ext: SandwichExt {
                     app_name: "serenity", // TODO: Support custom app names
                 }
-            },
-        })
-        .await
-    }
-
-    /// # Errors
-    ///
-    /// Errors if there is a problem with the WS connection.
-    #[cfg(feature = "voice")]
-    #[cfg_attr(feature = "tracing_instrument", instrument(skip(self)))]
-    pub async fn send_voice_state_update(
-        &mut self,
-        shard_info: &ShardInfo,
-        guild_id: GuildId,
-        channel_id: Option<ChannelId>,
-        self_mute: bool,
-        self_deaf: bool,
-    ) -> Result<()> {
-        debug!("[{:?}] Sending voice state update", shard_info);
-
-        self.send_json(&WebSocketMessage {
-            op: Opcode::VoiceStateUpdate,
-            d: WebSocketMessageData::VoiceStateUpdate {
-                guild_id,
-                channel_id,
-                self_mute,
-                self_deaf,
             },
         })
         .await

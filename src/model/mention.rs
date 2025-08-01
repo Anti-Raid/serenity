@@ -1,14 +1,8 @@
-#[cfg(all(feature = "model", feature = "utils"))]
-use std::error::Error as StdError;
 use std::fmt;
-#[cfg(all(feature = "model", feature = "utils"))]
-use std::str::FromStr;
 
 use aformat::{ArrayString, ToArrayString, aformat_into};
 
 use super::prelude::*;
-#[cfg(all(feature = "model", feature = "utils"))]
-use crate::utils;
 
 /// Allows something - such as a channel or role - to be mentioned in a message.
 pub trait Mentionable {
@@ -126,41 +120,6 @@ impl ToArrayString for Mention {
         }
 
         out
-    }
-}
-
-#[cfg(all(feature = "model", feature = "utils"))]
-#[derive(Debug)]
-pub enum MentionParseError {
-    InvalidMention,
-}
-
-#[cfg(all(feature = "model", feature = "utils"))]
-impl fmt::Display for MentionParseError {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.write_str("invalid mention")
-    }
-}
-
-#[cfg(all(feature = "model", feature = "utils"))]
-impl StdError for MentionParseError {}
-
-#[cfg(all(feature = "model", feature = "utils"))]
-impl FromStr for Mention {
-    type Err = MentionParseError;
-
-    fn from_str(s: &str) -> StdResult<Self, Self::Err> {
-        let m = if let Some(id) = utils::parse_channel_mention(s) {
-            id.mention()
-        } else if let Some(id) = utils::parse_role_mention(s) {
-            id.mention()
-        } else if let Some(id) = utils::parse_user_mention(s) {
-            id.mention()
-        } else {
-            return Err(MentionParseError::InvalidMention);
-        };
-
-        Ok(m)
     }
 }
 

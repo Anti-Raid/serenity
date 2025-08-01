@@ -20,11 +20,9 @@ use super::{
     ShardRunnerMessage,
     ShardRunnerOptions,
 };
-use crate::all::Token;
-#[cfg(feature = "voice")]
-use crate::gateway::VoiceGatewayManager;
+use crate::all::SecretString;
 use crate::gateway::client::EventHandler;
-use crate::gateway::{ConnectionStage, GatewayError, PresenceData};
+use crate::gateway::{ConnectionStage, GatewayError};
 use crate::http::Http;
 use crate::internal::prelude::*;
 use crate::internal::tokio::spawn_named;
@@ -35,7 +33,7 @@ pub const DEFAULT_WAIT_BETWEEN_SHARD_START: Duration = Duration::from_secs(5);
 /// A manager for handling the status of shards by starting them, restarting them, and stopping
 /// them when required.
 pub struct ShardManager {
-    token: Token,
+    token: SecretString,
     /// A sender that is cloned and given out to each ShardRunner as it is created
     manager_tx: Sender<ShardManagerMessage>,
     manager_rx: Receiver<ShardManagerMessage>,
@@ -57,9 +55,6 @@ pub struct ShardManager {
     /// **Note**: It is highly recommended to not mutate this yourself unless you need to. Instead
     /// prefer to use methods on this struct that are provided where possible.
     pub runners: Arc<DashMap<ShardId, (ShardRunnerInfo, Sender<ShardRunnerMessage>)>>,
-    /// A copy of the client's voice manager.
-    #[cfg(feature = "voice")]
-    pub voice_manager: Option<Arc<dyn VoiceGatewayManager + 'static>>,
     /// A copy of the URL to use to connect to the gateway.
     pub ws_url: Arc<str>,
     /// The total amount of shards to start.
@@ -67,7 +62,6 @@ pub struct ShardManager {
     /// Number of seconds to wait between each start.
     pub wait_time_between_shard_start: Duration,
     pub http: Arc<Http>,
-    pub presence: Option<PresenceData>,
 }
 
 impl ShardManager {
@@ -85,12 +79,9 @@ impl ShardManager {
             last_start: None,
             queue: ShardQueue::new(opt.max_concurrency),
             runners: Arc::new(DashMap::new()),
-            #[cfg(feature = "voice")]
-            voice_manager: opt.voice_manager,
             ws_url: opt.ws_url,
             shard_total: opt.shard_total,
             http: opt.http,
-            presence: opt.presence,
             wait_time_between_shard_start: opt.wait_time_between_shard_start,
         }
     }
@@ -207,7 +198,6 @@ impl ShardManager {
             Arc::clone(&self.ws_url),
             self.token.clone(),
             shard_info,
-            self.presence.clone(),
         )
         .await?;
 
@@ -219,8 +209,6 @@ impl ShardManager {
             event_handler: self.event_handler.clone(),
             runners: Arc::clone(&self.runners),
             manager_tx: self.manager_tx.clone(),
-            #[cfg(feature = "voice")]
-            voice_manager: self.voice_manager.clone(),
             shard,
             http: Arc::clone(&self.http),
         });
@@ -258,17 +246,14 @@ impl Drop for ShardManager {
 }
 
 pub struct ShardManagerOptions {
-    pub token: Token,
+    pub token: SecretString,
     pub data: Arc<dyn std::any::Any + Send + Sync>,
     pub event_handler: Option<Arc<dyn EventHandler>>,
-    #[cfg(feature = "voice")]
-    pub voice_manager: Option<Arc<dyn VoiceGatewayManager>>,
     pub ws_url: Arc<str>,
     pub shard_total: NonZeroU16,
     pub max_concurrency: NonZeroU16,
     pub wait_time_between_shard_start: Duration,
     pub http: Arc<Http>,
-    pub presence: Option<PresenceData>,
 }
 
 /// A message indicating what action the [`ShardManager`] should take.

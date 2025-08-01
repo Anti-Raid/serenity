@@ -10,18 +10,12 @@ use tracing::instrument;
 use tracing::{debug, error, trace, warn};
 
 use super::{Shard, ShardAction, ShardManagerMessage, ShardRunnerInfo};
-#[cfg(feature = "voice")]
-use crate::gateway::VoiceGatewayManager;
 use crate::gateway::client::dispatch::dispatch_model;
 use crate::gateway::client::{Context, EventHandler};
 use crate::gateway::{ChunkGuildFilter, GatewayError};
 use crate::http::Http;
 use crate::internal::prelude::*;
-#[cfg(feature = "voice")]
-use crate::model::event::Event;
 use crate::model::event::GatewayEvent;
-#[cfg(feature = "voice")]
-use crate::model::id::ChannelId;
 use crate::model::id::{GuildId, ShardId};
 
 /// A runner for managing a [`Shard`] and its respective WebSocket client.
@@ -36,8 +30,6 @@ pub struct ShardRunner {
     // channel to send messages to the shard runner from the shard manager
     runner_tx: Sender<ShardRunnerMessage>,
     pub(crate) shard: Shard,
-    #[cfg(feature = "voice")]
-    voice_manager: Option<Arc<dyn VoiceGatewayManager + 'static>>,
     pub http: Arc<Http>,
 }
 
@@ -54,8 +46,6 @@ impl ShardRunner {
             runner_rx: rx,
             runner_tx: tx,
             shard: opt.shard,
-            #[cfg(feature = "voice")]
-            voice_manager: opt.voice_manager,
             http: opt.http,
         }
     }
@@ -155,11 +145,6 @@ impl ShardRunner {
                         }
                     },
                     ShardAction::Dispatch(event) => {
-                        #[cfg(feature = "voice")]
-                        {
-                            self.handle_voice_event(&event).await;
-                        }
-
                         let context = self.make_context();
                         if !self
                             .event_handler
@@ -203,31 +188,6 @@ impl ShardRunner {
         );
     }
 
-    #[cfg(feature = "voice")]
-    #[cfg_attr(feature = "tracing_instrument", instrument(skip(self)))]
-    async fn handle_voice_event(&self, event: &Event) {
-        if let Some(voice_manager) = &self.voice_manager {
-            match event {
-                Event::Ready(_) => {
-                    voice_manager
-                        .register_shard(self.shard.shard_info().id.0, self.runner_tx.clone())
-                        .await;
-                },
-                Event::VoiceServerUpdate(event) => {
-                    voice_manager
-                        .server_update(event.guild_id, event.endpoint.as_deref(), &event.token)
-                        .await;
-                },
-                Event::VoiceStateUpdate(event) => {
-                    if let Some(guild_id) = event.voice_state.guild_id {
-                        voice_manager.state_update(guild_id, &event.voice_state).await;
-                    }
-                },
-                _ => {},
-            }
-        }
-    }
-
     // Receives messages over the internal `runner_rx` channel and handles them. Will loop over all
     // queued messages until the channel is empty. Requests a restart if handling a message fails.
     //
@@ -266,15 +226,6 @@ impl ShardRunner {
                     self.shard
                         .chunk_guild(guild_id, limit, presences, filter, nonce.as_deref())
                         .await
-                },
-                #[cfg(feature = "voice")]
-                ShardRunnerMessage::UpdateVoiceState {
-                    guild_id,
-                    channel_id,
-                    self_mute,
-                    self_deaf,
-                } => {
-                    self.shard.update_voice_state(guild_id, channel_id, self_mute, self_deaf).await
                 },
             };
 
@@ -361,11 +312,6 @@ impl ShardRunner {
     async fn restart(&mut self) {
         let shard_id = self.shard.shard_info().id;
 
-        #[cfg(feature = "voice")]
-        if let Some(voice_manager) = &self.voice_manager {
-            voice_manager.deregister_shard(shard_id.0).await;
-        }
-
         self.shutdown(4000).await;
 
         if let Err(why) = self.manager_tx.unbounded_send(ShardManagerMessage::Boot(shard_id)) {
@@ -409,8 +355,6 @@ pub struct ShardRunnerOptions {
     pub runners: Arc<DashMap<ShardId, (ShardRunnerInfo, Sender<ShardRunnerMessage>)>>,
     pub manager_tx: Sender<ShardManagerMessage>,
     pub shard: Shard,
-    #[cfg(feature = "voice")]
-    pub voice_manager: Option<Arc<dyn VoiceGatewayManager>>,
     pub http: Arc<Http>,
 }
 
@@ -447,13 +391,5 @@ pub enum ShardRunnerMessage {
         ///
         /// [`GuildMembersChunkEvent`]: crate::model::event::GuildMembersChunkEvent
         nonce: Option<String>,
-    },
-    /// Indicates that the client wants to join, move, or disconnect from a voice channel.
-    #[cfg(feature = "voice")]
-    UpdateVoiceState {
-        guild_id: GuildId,
-        channel_id: Option<ChannelId>,
-        self_mute: bool,
-        self_deaf: bool,
     },
 }

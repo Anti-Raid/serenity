@@ -1,5 +1,6 @@
 //! User information-related models.
 
+use std::collections::HashMap;
 use std::fmt;
 use std::num::NonZeroU16;
 use std::ops::{Deref, DerefMut};
@@ -174,7 +175,7 @@ impl OnlineStatus {
 /// additional partial member field documented [here](https://discord.com/developers/docs/topics/gateway-events#message-create).
 #[bool_to_bitflags::bool_to_bitflags]
 
-#[derive(Clone, Debug, Default, PartialEq, Eq, Hash, serde::Deserialize, serde::Serialize)]
+#[derive(Clone, Debug, Default, PartialEq, Eq, serde::Deserialize, serde::Serialize)]
 #[non_exhaustive]
 pub struct User {
     /// The unique Id of the user. Can be used to calculate the account's creation date.
@@ -193,8 +194,6 @@ pub struct User {
     /// The account's display name, if it is set.
     /// For bots this is the application name.
     pub global_name: Option<FixedString<u8>>,
-    /// Optional avatar hash.
-    pub avatar: Option<ImageHash>,
     /// Indicator of whether the user is a bot.
     #[serde(default)]
     pub bot: bool,
@@ -204,27 +203,6 @@ pub struct User {
     /// Whether the user has two factor enabled on their account
     #[serde(default)]
     pub mfa_enabled: bool,
-    /// Optional banner hash.
-    ///
-    /// **Note**: This will only be present if the user is fetched via Rest API, e.g. with
-    /// [`crate::http::Http::get_user`].
-    pub banner: Option<ImageHash>,
-    /// The user's banner colour encoded as an integer representation of hexadecimal colour code
-    ///
-    /// **Note**: This will only be present if the user is fetched via Rest API, e.g. with
-    /// [`crate::http::Http::get_user`].
-    #[serde(rename = "accent_color")]
-    pub accent_colour: Option<Colour>,
-    /// The user's chosen language option
-    pub locale: Option<FixedString>,
-    /// Whether the email on this account has been verified
-    ///
-    /// Requires [`Scope::Email`]
-    pub verified: Option<bool>,
-    /// The user's email
-    ///
-    /// Requires [`Scope::Email`]
-    pub email: Option<FixedString>,
     /// The flags on a user's account
     #[serde(default)]
     pub flags: UserPublicFlags,
@@ -233,11 +211,9 @@ pub struct User {
     pub premium_type: PremiumType,
     /// The public flags on a user's account
     pub public_flags: Option<UserPublicFlags>,
-    /// Only included in [`Message::mentions`] for messages from the gateway.
-    ///
-    /// [Discord docs](https://discord.com/developers/docs/topics/gateway-events#message-create-message-create-extra-fields).
-    // Box required to avoid infinitely recursive types
-    pub member: Option<Box<PartialMember>>,
+
+    #[serde(flatten)]
+    pub extra_info: HashMap<String, serde_json::Value>,
 }
 
 impl ExtractKey<UserId> for User {

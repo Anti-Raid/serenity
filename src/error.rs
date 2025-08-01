@@ -15,7 +15,6 @@ use crate::gateway::GatewayError;
 use crate::http::HttpError;
 use crate::internal::prelude::*;
 use crate::model::ModelError;
-use crate::secrets::TokenError;
 
 /// The common result type between most library functions.
 ///
@@ -49,10 +48,6 @@ pub enum Error {
     /// An error from the `tungstenite` crate.
     #[cfg(feature = "gateway")]
     Tungstenite(Box<TungsteniteError>),
-    /// An error from the [`secrets`] module.
-    ///
-    /// [`secrets`]: crate::secrets
-    Token(TokenError),
     /// When parsing a URL failed due to invalid input.
     Url(UrlError),
 }
@@ -121,12 +116,6 @@ impl From<HttpError> for Error {
     }
 }
 
-impl From<TokenError> for Error {
-    fn from(e: TokenError) -> Error {
-        Error::Token(e)
-    }
-}
-
 impl From<UrlError> for Error {
     fn from(e: UrlError) -> Error {
         Error::Url(e)
@@ -165,7 +154,6 @@ impl fmt::Display for Error {
             Self::Http(inner) => fmt::Display::fmt(&inner, f),
             #[cfg(feature = "gateway")]
             Self::Tungstenite(inner) => fmt::Display::fmt(&inner, f),
-            Self::Token(inner) => fmt::Display::fmt(&inner, f),
             Self::Url(inner) => fmt::Display::fmt(&inner, f),
         }
     }
@@ -184,7 +172,6 @@ impl StdError for Error {
             Self::Http(inner) => Some(inner),
             #[cfg(feature = "gateway")]
             Self::Tungstenite(inner) => Some(inner),
-            Self::Token(inner) => Some(inner),
             Self::Url(inner) => Some(inner),
         }
     }

@@ -75,12 +75,6 @@ macro_rules! id_u64 {
                     // reference to a packed field and therefore errors.
                     {self.0.0}.get()
                 }
-
-                #[doc = concat!("Retrieves the time that the ", stringify!($name), " was created.")]
-                #[must_use]
-                pub fn created_at(&self) -> Timestamp {
-                    Timestamp::from_discord_id(self.get())
-                }
             }
 
             // This is a hack so functions can accept iterators that either:
@@ -266,14 +260,6 @@ mod tests {
     use nonmax::NonMaxU64;
 
     use super::{GuildId, InnerId};
-
-    #[test]
-    fn test_created_at() {
-        // The id is from discord's snowflake docs
-        let id = GuildId::new(175928847299117063);
-        assert_eq!(id.created_at().unix_timestamp(), 1462015105);
-        assert_eq!(id.created_at().to_string(), "2016-04-30T11:18:25.796Z");
-    }
 
     #[test]
     fn test_id_serde() {

@@ -1,6 +1,9 @@
+use std::collections::HashMap;
+
+use chrono::{DateTime, Utc};
+
 use super::*;
 use crate::internal::prelude::*;
-use crate::model::utils::is_false;
 
 impl ThreadId {
     /// Converts the type of this Id to [`GenericChannelId`].
@@ -36,14 +39,9 @@ pub struct GuildThread {
     ///
     /// This is only included on certain API endpoints.
     pub member: Option<PartialThreadMember>,
-    /// The number of messages ever sent in a thread, it's similar to `message_count` on message
-    /// creation, but will not decrement the number when a message is deleted.
-    pub total_message_sent: u32,
-    /// The set of applied tags.
-    ///
-    /// **Note**: This is only available in a thread in a forum.
-    #[serde(default)]
-    pub applied_tags: FixedArray<ForumTagId>,
+
+    #[serde(flatten)]
+    pub extra_info: HashMap<String, serde_json::Value>,
 }
 
 impl ExtractKey<ThreadId> for GuildThread {
@@ -57,28 +55,19 @@ impl ExtractKey<ThreadId> for GuildThread {
 /// [Discord docs](https://discord.com/developers/docs/resources/channel#thread-metadata-object).
 #[bool_to_bitflags::bool_to_bitflags]
 
-#[derive(Clone, Copy, Debug, Default, serde::Deserialize, serde::Serialize)]
+#[derive(Clone, Debug, Default, serde::Deserialize, serde::Serialize)]
 #[non_exhaustive]
 pub struct ThreadMetadata {
     /// Whether the thread is archived.
     pub archived: bool,
     /// Duration in minutes to automatically archive the thread after recent activity.
     pub auto_archive_duration: AutoArchiveDuration,
-    /// The last time the thread's archive status was last changed; used for calculating recent
-    /// activity.
-    pub archive_timestamp: Option<Timestamp>,
     /// When a thread is locked, only users with `MANAGE_THREADS` permission can unarchive it.
     #[serde(default)]
     pub locked: bool,
-    /// Timestamp when the thread was created.
-    ///
-    /// **Note**: only populated for threads created after 2022-01-09
-    pub create_timestamp: Option<Timestamp>,
-    /// Whether non-moderators can add other non-moderators to a thread.
-    ///
-    /// **Note**: Only available on private threads.
-    #[serde(default, skip_serializing_if = "is_false")]
-    pub invitable: bool,
+
+    #[serde(flatten)]
+    pub extra_info: HashMap<String, serde_json::Value>,
 }
 
 /// A partial guild thread.
@@ -98,6 +87,9 @@ pub struct PartialGuildThread {
     /// The channel type.
     #[serde(rename = "type")]
     pub kind: ChannelType,
+
+    #[serde(flatten)]
+    pub extra_info: HashMap<String, serde_json::Value>,
 }
 
 
@@ -105,9 +97,12 @@ pub struct PartialGuildThread {
 #[non_exhaustive]
 pub struct PartialThreadMember {
     /// The time the current user last joined the thread.
-    pub join_timestamp: Timestamp,
+    pub join_timestamp: DateTime<Utc>,
     /// Any user-thread settings, currently only used for notifications
     pub flags: ThreadMemberFlags,
+
+    #[serde(flatten)]
+    pub extra_info: HashMap<String, serde_json::Value>,
 }
 
 /// A model representing a user in a Guild Thread.
@@ -135,11 +130,9 @@ pub struct ThreadMember {
     ///
     /// Always present in [`ThreadMemberUpdateEvent`], otherwise `None`.
     pub guild_id: Option<GuildId>,
-    // According to https://discord.com/developers/docs/topics/gateway-events#thread-members-update,
-    // > the thread member objects will also include the guild member and nullable presence objects
-    // > for each added thread member
-    // Which implies that ThreadMember has a presence field. But https://discord.com/developers/docs/resources/channel#thread-member-object
-    // says that's not true. I'm not adding the presence field here for now
+
+    #[serde(flatten)]
+    pub extra_info: HashMap<String, serde_json::Value>,
 }
 
 bitflags! {

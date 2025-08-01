@@ -54,17 +54,3 @@ impl From<&GuildChannel> for ChannelId {
         public_channel.id
     }
 }
-
-impl From<WebhookChannel> for ChannelId {
-    /// Gets the Id of a webhook channel.
-    fn from(webhook_channel: WebhookChannel) -> ChannelId {
-        webhook_channel.id
-    }
-}
-
-impl From<&WebhookChannel> for ChannelId {
-    /// Gets the Id of a webhook channel.
-    fn from(webhook_channel: &WebhookChannel) -> ChannelId {
-        webhook_channel.id
-    }
-}

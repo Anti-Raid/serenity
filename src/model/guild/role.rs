@@ -1,7 +1,7 @@
 use std::cmp::Ordering;
+use std::collections::HashMap;
 use std::fmt;
 use crate::model::prelude::*;
-use crate::model::utils::is_false;
 
 /// Information about a role within a guild.
 ///
@@ -11,8 +11,6 @@ use crate::model::utils::is_false;
 /// permission overrides in addition to guild-level permissions.
 ///
 /// [Discord docs](https://discord.com/developers/docs/topics/permissions#role-object).
-#[bool_to_bitflags::bool_to_bitflags]
-
 #[derive(Clone, Debug, Default, PartialEq, Eq, serde::Deserialize, serde::Serialize)]
 #[non_exhaustive]
 pub struct Role {
@@ -21,22 +19,6 @@ pub struct Role {
     /// The Id of the Guild the Role is in.
     #[serde(default)]
     pub guild_id: GuildId,
-    /// The colour of the role.
-    #[serde(rename = "color")]
-    pub colour: Colour,
-    /// Indicator of whether the role is pinned above lesser roles.
-    ///
-    /// In the client, this causes [`Member`]s in the role to be seen above those in roles with a
-    /// lower [`Self::position`].
-    pub hoist: bool,
-    /// Indicator of whether the role is managed by an integration service.
-    pub managed: bool,
-    /// Indicator of whether the role can be mentioned, similar to mentioning a specific member or
-    /// `@everyone`.
-    ///
-    /// Only members of the role will be notified if a role is mentioned with this set to `true`.
-    #[serde(default)]
-    pub mentionable: bool,
     /// The name of the role.
     pub name: FixedString,
     /// A set of permissions that the role has been assigned.
@@ -50,17 +32,9 @@ pub struct Role {
     ///
     /// The `@everyone` role is usually either `-1` or `0`.
     pub position: i16,
-    /// The tags this role has. It can be used to determine if this role is a special role in this
-    /// guild such as guild subscriber role, or if the role is linked to an [`Integration`] or a
-    /// bot.
-    ///
-    /// [`Integration`]: super::Integration
-    #[serde(default)]
-    pub tags: RoleTags,
-    /// Role icon image hash.
-    pub icon: Option<ImageHash>,
-    /// Role unicoded image.
-    pub unicode_emoji: Option<FixedString>,
+
+    #[serde(flatten)]
+    pub extra_info: HashMap<String, serde_json::Value>,
 }
 
 #[cfg(feature = "model")]
@@ -83,16 +57,6 @@ impl Role {
         } else {
             self.permissions.contains(permissions)
         }
-    }
-
-    #[must_use]
-    /// Generates a URL to the Role icon's image.
-    pub fn icon_url(&self) -> Option<String> {
-        self.icon.map(|icon| {
-            let ext = if icon.is_animated() { "gif" } else { "webp" };
-
-            cdn!("/role-icons/{}/{}.{}", self.id, icon, ext)
-        })
     }
 }
 
@@ -138,94 +102,5 @@ impl From<&Role> for RoleId {
     /// Gets the Id of a role.
     fn from(role: &Role) -> RoleId {
         role.id
-    }
-}
-
-/// The tags of a [`Role`].
-///
-/// [Discord docs](https://discord.com/developers/docs/topics/permissions#role-object-role-tags-structure).
-#[bool_to_bitflags::bool_to_bitflags]
-#[derive(Clone, Debug, Default, Eq, PartialEq, serde::Deserialize, serde::Serialize)]
-
-#[non_exhaustive]
-pub struct RoleTags {
-    /// The Id of the bot the [`Role`] belongs to.
-    pub bot_id: Option<UserId>,
-    /// The Id of the integration the [`Role`] belongs to.
-    pub integration_id: Option<IntegrationId>,
-    /// Whether this is the guild's premium subscriber role.
-    #[serde(default, skip_serializing_if = "is_false", with = "bool_as_option_unit")]
-    pub premium_subscriber: bool,
-    /// The id of this role's subscription sku and listing.
-    pub subscription_listing_id: Option<SkuId>,
-    /// Whether this role is available for purchase.
-    #[serde(default, skip_serializing_if = "is_false", with = "bool_as_option_unit")]
-    pub available_for_purchase: bool,
-    /// Whether this role is a guild's linked role.
-    #[serde(default, skip_serializing_if = "is_false", with = "bool_as_option_unit")]
-    pub guild_connections: bool,
-}
-
-/// A premium subscriber role is reported with the field present and the value `null`.
-mod bool_as_option_unit {
-    use std::fmt;
-
-    use serde::de::{Error, Visitor};
-    use serde::{Deserializer, Serializer};
-
-    pub fn deserialize<'de, D: Deserializer<'de>>(deserializer: D) -> Result<bool, D::Error> {
-        deserializer.deserialize_option(NullValueVisitor)
-    }
-
-    #[expect(clippy::trivially_copy_pass_by_ref)]
-    pub fn serialize<S: Serializer>(_: &bool, serializer: S) -> Result<S::Ok, S::Error> {
-        serializer.serialize_none()
-    }
-
-    struct NullValueVisitor;
-
-    impl Visitor<'_> for NullValueVisitor {
-        type Value = bool;
-
-        fn expecting(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-            f.write_str("null value")
-        }
-
-        fn visit_none<E: Error>(self) -> Result<Self::Value, E> {
-            Ok(true)
-        }
-
-        fn visit_unit<E: Error>(self) -> Result<Self::Value, E> {
-            Ok(true)
-        }
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use serde_json::json;
-
-    use super::RoleTags;
-    use crate::model::utils::assert_json;
-
-    #[test]
-    fn premium_subscriber_role_serde() {
-        let mut value = RoleTags::default();
-        value.set_premium_subscriber(true);
-
-        assert_json(
-            &value,
-            json!({"bot_id": null, "integration_id": null, "premium_subscriber": null, "subscription_listing_id": null}),
-        );
-    }
-
-    #[test]
-    fn non_premium_subscriber_role_serde() {
-        let value = RoleTags::default();
-
-        assert_json(
-            &value,
-            json!({"bot_id": null, "integration_id": null, "subscription_listing_id": null}),
-        );
     }
 }

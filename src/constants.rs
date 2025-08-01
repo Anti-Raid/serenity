@@ -2,15 +2,6 @@
 
 use nonmax::NonMaxU16;
 
-/// The maximum length of the textual size of an embed.
-pub const EMBED_MAX_LENGTH: usize = 6000;
-
-/// The maximum number of embeds in a message.
-pub const EMBED_MAX_COUNT: usize = 10;
-
-/// The maximum number of stickers in a message.
-pub const STICKER_MAX_COUNT: usize = 3;
-
 /// The gateway version used by the library. The gateway URL is retrieved via the REST API.
 pub const GATEWAY_VERSION: u8 = 10;
 
@@ -30,7 +21,7 @@ pub const MEMBER_FETCH_LIMIT: NonMaxU16 = match NonMaxU16::new(1000) {
 ///
 /// [UserAgent]: ::reqwest::header::USER_AGENT
 pub const USER_AGENT: &str = concat!(
-    "DiscordBot (https://github.com/serenity-rs/serenity, ",
+    "DiscordBot (https://github.com/Anti-Raid/serenity, ",
     env!("CARGO_PKG_VERSION"),
     ")"
 );

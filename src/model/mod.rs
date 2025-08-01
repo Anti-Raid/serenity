@@ -32,22 +32,12 @@ pub mod guild;
 pub mod id;
 pub mod invite;
 pub mod mention;
-pub mod misc;
-pub mod monetization;
 pub mod permissions;
-pub mod sticker;
-pub mod timestamp;
 pub mod user;
-pub mod voice;
-pub mod webhook;
-
-#[cfg(feature = "voice_model")]
-pub use serenity_voice_model as voice_gateway;
 
 pub use self::colour::{Color, Colour};
 pub use self::error::Error as ModelError;
 pub use self::permissions::Permissions;
-pub use self::timestamp::Timestamp;
 
 /// The model prelude re-exports all types in the model sub-modules.
 ///
@@ -77,7 +67,6 @@ pub mod prelude {
     #[doc(hidden)]
     pub use super::{
         ModelError,
-        Timestamp,
         application::*,
         channel::*,
         colour::*,
@@ -87,13 +76,8 @@ pub mod prelude {
         id::*,
         invite::*,
         mention::*,
-        misc::*,
-        monetization::*,
         permissions::*,
-        sticker::*,
         user::*,
-        voice::*,
-        webhook::*,
     };
     pub(crate) use crate::internal::prelude::*;
 }

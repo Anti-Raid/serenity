@@ -55,8 +55,6 @@ percent-encoding = { version = "2.3.0", optional = true }
 mime_guess = { version = "2.0.4", optional = true }
 dashmap = { version = "6.1.0", features = ["serde"], optional = true }
 # serde feature only allows for serialisation,
-# Serenity workspace crates
-serenity-voice-model = { version = "0.2.0", path = "./voice-model", optional = true }
 ref-cast = "1.0.23"
 
 [dev-dependencies.http_crate]
@@ -88,13 +86,11 @@ http = ["dashmap", "mime_guess", "percent-encoding"]
 # Note: the model type definitions themselves are always active, regardless of this feature.
 # TODO: remove dependeny on utils feature
 model = ["builder", "http", "utils"]
-voice_model = ["serenity-voice-model"]
 # Enables support for Discord API functionality that's not stable yet, as well as serenity APIs that
 # are allowed to change even in semver non-breaking updates.
 unstable = []
 # Enables some utility functions that can be useful for bot creators.
 utils = []
-voice = ["gateway"]
 # Enables unstable tokio features to give explicit names to internally spawned tokio tasks
 tokio_task_builder = ["tokio/tracing"]
 # Uses chrono for Timestamp, instead of time
@@ -104,7 +100,7 @@ chrono = ["dep:chrono"]
 # (Note: all feature-gated APIs to be documented should have their features listed here!)
 #
 # Unstable functionality should be gated under the `unstable` feature.
-full = ["default", "voice", "voice_model"]
+full = ["default"]
 
 # Enables compile-time heavy instrument macros from tracing
 tracing_instrument = ["tracing/attributes"]

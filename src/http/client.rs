@@ -5,10 +5,9 @@ use std::cell::Cell;
 use std::sync::atomic::{AtomicU64, Ordering};
 
 use arrayvec::ArrayVec;
+use chrono::{DateTime, Utc};
 use nonmax::{NonMaxU8, NonMaxU16};
 use percent_encoding::{NON_ALPHANUMERIC, utf8_percent_encode};
-#[cfg(feature = "utils")]
-use reqwest::Url;
 use reqwest::header::{HeaderMap as Headers, HeaderValue};
 use reqwest::{Client, ClientBuilder, Response as ReqwestResponse, StatusCode};
 use serde::de::DeserializeOwned;
@@ -30,7 +29,7 @@ use super::{
     MessagePagination,
     UserPagination,
 };
-use crate::all::Token;
+use crate::all::SecretString;
 use crate::all::CreateAttachment;
 use crate::constants;
 use crate::internal::prelude::*;
@@ -81,14 +80,14 @@ where
 #[must_use]
 pub struct HttpBuilder {
     client: Option<Client>,
-    token: Option<Token>,
+    token: Option<SecretString>,
     proxy: Option<FixedString<u16>>,
     application_id: Option<ApplicationId>,
 }
 
 impl HttpBuilder {
     /// Construct a new builder.
-    pub fn new(token: Token) -> Self {
+    pub fn new(token: SecretString) -> Self {
         Self {
             client: None,
             token: Some(token),
@@ -196,14 +195,14 @@ fn reason_into_header(reason: &str) -> Headers {
 pub struct Http {
     pub(crate) client: Client,
     pub proxy: Option<FixedString<u16>>,
-    token: Option<Token>,
+    token: Option<SecretString>,
     application_id: AtomicU64,
 }
 
 impl Http {
     /// Construct an authorized HTTP client.
     #[must_use]
-    pub fn new(token: Token) -> Self {
+    pub fn new(token: SecretString) -> Self {
         HttpBuilder::new(token).build()
     }
 
@@ -829,45 +828,6 @@ impl Http {
             method: LightMethod::Post,
             route: Route::GuildStickers {
                 guild_id,
-            },
-            params: None,
-        })
-        .await
-    }
-
-    /// Creates a test entitlement to a given SKU for a given guild or user. Discord will act as
-    /// though that user/guild has entitlement in perpetuity to the SKU. As a result, the returned
-    /// entitlement will have `starts_at` and `ends_at` both be `None`.
-    pub async fn create_test_entitlement(
-        &self,
-        sku_id: SkuId,
-        owner: EntitlementOwner,
-    ) -> ResultJson {
-        #[derive(serde::Serialize)]
-        struct TestEntitlement {
-            sku_id: SkuId,
-            owner_id: u64,
-            owner_type: u8,
-        }
-
-        let (owner_id, owner_type) = match owner {
-            EntitlementOwner::Guild(id) => (id.get(), 1),
-            EntitlementOwner::User(id) => (id.get(), 2),
-        };
-
-        let map = TestEntitlement {
-            sku_id,
-            owner_id,
-            owner_type,
-        };
-
-        self.fire(Request {
-            body: Some(to_vec(&map)?),
-            multipart: None,
-            headers: None,
-            method: LightMethod::Post,
-            route: Route::Entitlements {
-                application_id: self.try_application_id()?,
             },
             params: None,
         })
@@ -2609,7 +2569,7 @@ impl Http {
     pub async fn get_channel_archived_public_threads(
         &self,
         channel_id: ChannelId,
-        before: Option<Timestamp>,
+        before: Option<DateTime<Utc>>,
         limit: Option<u64>,
     ) -> ResultJson {
         let (before_str, limit_str);
@@ -2640,7 +2600,7 @@ impl Http {
     pub async fn get_channel_archived_private_threads(
         &self,
         channel_id: ChannelId,
-        before: Option<Timestamp>,
+        before: Option<DateTime<Utc>>,
         limit: Option<u64>,
     ) -> ResultJson {
         let (before_str, limit_str);
@@ -3980,28 +3940,6 @@ impl Http {
         .await
     }
 
-    /// Retrieves a webhook given its url.
-    ///
-    /// This method does _not_ require authentication
-    #[cfg(feature = "utils")]
-    pub async fn get_webhook_from_url(&self, url: &str) -> ResultJson {
-        let url = Url::parse(url)?;
-        let (webhook_id, token) =
-            crate::utils::parse_webhook(&url).ok_or(HttpError::InvalidWebhook)?;
-        self.fire(Request {
-            body: None,
-            multipart: None,
-            headers: None,
-            method: LightMethod::Get,
-            route: Route::WebhookWithToken {
-                webhook_id,
-                token,
-            },
-            params: None,
-        })
-        .await
-    }
-
     /// Kicks a member from a guild with a provided reason.
     pub async fn kick_member(
         &self,
@@ -4256,7 +4194,7 @@ impl Http {
             let request = req
                 .build(
                     &self.client,
-                    self.token.as_ref().map(Token::expose_secret),
+                    self.token.as_ref().map(SecretString::expose_secret),
                     self.proxy.as_deref(),
                 )
                 .await?

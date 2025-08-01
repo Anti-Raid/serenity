@@ -4,8 +4,6 @@ use std::collections::HashMap;
 
 mod command;
 pub use command::*;
-mod component;
-pub use component::*;
 
 use super::prelude::*;
 
@@ -29,7 +27,7 @@ pub struct PartialCurrentApplicationInfo {
 pub struct CurrentApplicationInfo {
     pub id: ApplicationId,
     pub name: FixedString,
-    pub icon: Option<ImageHash>,
+    pub icon: Option<String>,
     pub description: FixedString,
     #[serde(default)]
     pub rpc_origins: FixedArray<String>,
@@ -69,6 +67,9 @@ pub struct CurrentApplicationInfo {
     pub guild: Option<PartialGuild>,
     pub redirect_uris: Option<Vec<String>>,
     pub interactions_endpoint_url: Option<String>,
+
+    #[serde(flatten)]
+    pub extra_info: HashMap<String, serde_json::Value>,
 }
 
 impl ApplicationId {
@@ -130,7 +131,7 @@ pub struct InstallationContextConfig {
 #[non_exhaustive]
 pub struct Team {
     /// The icon of the team.
-    pub icon: Option<ImageHash>,
+    pub icon: Option<String>,
     /// The snowflake ID of the team.
     pub id: GenericId,
     /// The name of the team.

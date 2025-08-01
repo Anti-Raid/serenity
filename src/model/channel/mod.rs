@@ -1,10 +1,7 @@
 //! Models relating to channels and types within channels.
 
-mod attachment;
 mod channel_id;
-mod followed_channel;
 mod guild_channel;
-mod interaction_channel;
 mod private_channel;
 mod reaction;
 mod thread;
@@ -15,10 +12,7 @@ use serde::de::Error as DeError;
 use serde::ser::SerializeMap as _;
 use serde_json::value::Map as JsonMap;
 
-pub use self::attachment::*;
-pub use self::followed_channel::*;
 pub use self::guild_channel::*;
-pub use self::interaction_channel::*;
 pub use self::private_channel::*;
 pub use self::reaction::*;
 pub use self::thread::*;

@@ -6,43 +6,13 @@ mod member;
 mod partial_guild;
 mod premium_tier;
 mod role;
-mod system_channel;
-mod welcome_screen;
 
 pub use self::guild_id::*;
 pub use self::member::*;
 pub use self::partial_guild::*;
 pub use self::premium_tier::*;
 pub use self::role::*;
-pub use self::system_channel::*;
-pub use self::welcome_screen::*;
 use crate::model::prelude::*;
-
-/// A representation of a banning of a user.
-///
-/// [Discord docs](https://discord.com/developers/docs/resources/guild#ban-object).
-#[derive(Clone, Debug, Eq, Hash, PartialEq, Deserialize, Serialize)]
-#[non_exhaustive]
-pub struct Ban {
-    /// The reason given for this ban.
-    pub reason: Option<FixedString>,
-    /// The user that was banned.
-    pub user: User,
-}
-
-/// The response from [`GuildId::bulk_ban`].
-///
-/// [Discord docs](https://discord.com/developers/docs/resources/guild#bulk-guild-ban).
-
-#[derive(Clone, Debug, PartialEq, Deserialize, Serialize)]
-#[non_exhaustive]
-pub struct BulkBanResponse {
-    /// The users that were successfully banned.
-    pub banned_users: Vec<UserId>,
-    /// The users that were not successfully banned.
-    pub failed_users: Vec<UserId>,
-}
-
 
 #[derive(Clone, Debug, PartialEq, Deserialize, Serialize)]
 pub struct AfkMetadata {

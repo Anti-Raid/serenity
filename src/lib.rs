@@ -94,8 +94,6 @@ pub mod gateway;
 #[cfg(feature = "http")]
 pub mod http;
 pub mod secrets;
-#[cfg(feature = "utils")]
-pub mod utils;
 
 mod error;
 
@@ -118,9 +116,6 @@ pub mod all {
     pub use crate::http::*;
     #[doc(no_inline)]
     pub use crate::secrets::*;
-    #[cfg(feature = "utils")]
-    #[doc(no_inline)]
-    pub use crate::utils::*;
     // #[doc(no_inline)]
     // pub use crate::*;
     #[doc(no_inline)]

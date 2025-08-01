@@ -44,20 +44,6 @@ impl From<&InviteGuild> for GuildId {
     }
 }
 
-impl From<WebhookGuild> for GuildId {
-    /// Gets the Id of Webhook Guild struct.
-    fn from(webhook_guild: WebhookGuild) -> GuildId {
-        webhook_guild.id
-    }
-}
-
-impl From<&WebhookGuild> for GuildId {
-    /// Gets the Id of Webhook Guild struct.
-    fn from(webhook_guild: &WebhookGuild) -> GuildId {
-        webhook_guild.id
-    }
-}
-
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq, Deserialize, Serialize)]
 #[non_exhaustive]
 pub enum GuildWidgetStyle {

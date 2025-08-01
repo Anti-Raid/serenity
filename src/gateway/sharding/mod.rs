@@ -52,16 +52,13 @@ pub use self::shard_manager::{
 };
 pub use self::shard_queue::ShardQueue;
 pub use self::shard_runner::{ShardRunner, ShardRunnerMessage, ShardRunnerOptions};
-use super::{ActivityData, ChunkGuildFilter, GatewayError, PresenceData, WsClient};
-use crate::all::{IEvent, ReadyEvent, Token};
+use super::{ChunkGuildFilter, GatewayError, WsClient};
+use crate::all::{IEvent, ReadyEvent, SecretString};
 use crate::constants::{self, CloseCode};
 use crate::internal::prelude::*;
 use crate::model::event::GatewayEvent;
 use crate::model::gateway::ShardInfo;
-#[cfg(feature = "voice")]
-use crate::model::id::ChannelId;
 use crate::model::id::{ApplicationId, GuildId, ShardId};
-use crate::model::user::OnlineStatus;
 
 /// An abstract handler for a websocket connection to Discord's gateway.
 ///
@@ -90,7 +87,6 @@ use crate::model::user::OnlineStatus;
 /// [`Client`]: crate::Client
 pub struct Shard {
     pub client: WsClient,
-    presence: PresenceData,
     last_heartbeat_sent: Option<Instant>,
     last_heartbeat_ack: Option<Instant>,
     heartbeat_interval: Option<std::time::Duration>,
@@ -106,7 +102,7 @@ pub struct Shard {
     // This acts as a timeout to determine if the shard has - for some reason - not started within
     // a decent amount of time.
     pub started: Instant,
-    token: Token,
+    token: SecretString,
     ws_url: Arc<str>,
     resume_metadata: Option<ResumeMetadata>,
 }
@@ -127,14 +123,14 @@ impl Shard {
     /// use serenity::gateway::Shard;
     /// use serenity::model::gateway::ShardInfo;
     /// use serenity::model::id::ShardId;
-    /// use serenity::secrets::Token;
+    /// use serenity::secrets::SecretString;
     /// use tokio::sync::Mutex;
     /// #
     /// # use serenity::http::Http;
     /// #
     /// # async fn run() -> Result<(), Box<dyn std::error::Error>> {
     /// # let http: Arc<Http> = unimplemented!();
-    /// let token = Token::from_env("DISCORD_TOKEN")?;
+    /// let token = SecretString::new("DISCORD_TOKEN")?;
     /// let shard_info = ShardInfo {
     ///     id: ShardId(0),
     ///     total: NonZeroU16::MIN,
@@ -162,13 +158,11 @@ impl Shard {
     /// TLS error.
     pub async fn new(
         ws_url: Arc<str>,
-        token: Token,
+        token: SecretString,
         info: ShardInfo,
-        presence: Option<PresenceData>,
     ) -> Result<Shard> {
         let client = connect(&ws_url).await?;
 
-        let presence = presence.unwrap_or_default();
         let last_heartbeat_sent = None;
         let last_heartbeat_ack = None;
         let heartbeat_interval = None;
@@ -178,7 +172,6 @@ impl Shard {
 
         Ok(Shard {
             client,
-            presence,
             last_heartbeat_sent,
             last_heartbeat_ack,
             heartbeat_interval,
@@ -202,11 +195,6 @@ impl Shard {
         callback: impl FnOnce(ApplicationId) + Send + Sync + 'static,
     ) {
         self.application_id_callback = Some(Box::new(callback));
-    }
-
-    /// Retrieves the current presence of the shard.
-    pub fn presence(&self) -> &PresenceData {
-        &self.presence
     }
 
     /// Retrieves the value of when the last heartbeat was sent.
@@ -266,20 +254,6 @@ impl Shard {
 
     pub fn session_id(&self) -> Option<&str> {
         self.resume_metadata.as_ref().map(|m| &*m.session_id)
-    }
-
-    #[cfg_attr(feature = "tracing_instrument", instrument(skip(self)))]
-    pub fn set_activity(&mut self, activity: Option<ActivityData>) {
-        self.presence.activity = activity;
-    }
-
-    #[cfg_attr(feature = "tracing_instrument", instrument(skip(self)))]
-    pub fn set_status(&mut self, mut status: OnlineStatus) {
-        if status == OnlineStatus::Offline {
-            status = OnlineStatus::Invisible;
-        }
-
-        self.presence.status = status;
     }
 
     /// Retrieves a copy of the current shard information.
@@ -404,8 +378,7 @@ impl Shard {
     ///
     /// The best case scenario is that one of two values is returned:
     /// - `Ok(None)`: a heartbeat, late hello, or session invalidation was received;
-    /// - `Ok(Some((event, None)))`: an op0 dispatch was received, and the shard's voice state will
-    ///   be updated, _if_ the `voice` feature is enabled.
+    /// - `Ok(Some((event, None)))`: an op0 dispatch was received;
     ///
     /// # Errors
     ///
@@ -571,25 +544,6 @@ impl Shard {
         debug!("[{:?}] Requesting member chunks", self.info);
 
         self.client.send_chunk_guild(guild_id, &self.info, limit, presences, filter, nonce).await
-    }
-
-    /// Indicates to the gateway that the client wants to join, move, or disconnect from a voice
-    /// channel.
-    ///
-    /// # Errors
-    ///
-    /// Errors if there is a problem with the WS connection.
-    #[cfg(feature = "voice")]
-    pub async fn update_voice_state(
-        &mut self,
-        guild_id: GuildId,
-        channel_id: Option<ChannelId>,
-        self_mute: bool,
-        self_deaf: bool,
-    ) -> Result<()> {
-        self.client
-            .send_voice_state_update(&self.info, guild_id, channel_id, self_mute, self_deaf)
-            .await
     }
 
     /// Sets the shard as going into identifying stage, which sets:

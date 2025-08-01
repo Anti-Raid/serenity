@@ -1,24 +1,6 @@
 use std::fmt;
 
-use arrayvec::ArrayVec;
-use small_fixed_array::FixedString;
-
 use super::prelude::*;
-
-/// Helper function for `#[serde(skip_serializing_if = "is_false")]`
-#[expect(clippy::trivially_copy_pass_by_ref)]
-pub fn is_false(v: &bool) -> bool {
-    !v
-}
-
-#[cfg(feature = "model")]
-pub(super) fn icon_url(id: GuildId, icon: Option<&ImageHash>) -> Option<String> {
-    icon.map(|icon| {
-        let ext = if icon.is_animated() { "gif" } else { "webp" };
-
-        cdn!("/icons/{}/{}.{}", id, icon, ext)
-    })
-}
 
 pub(super) enum StrOrInt<'de> {
     String(String),
@@ -93,46 +75,6 @@ where
         &deserialized == data,
         "JSON->data deserialization failed\nexpected: {data:?}\n     got: {deserialized:?}"
     );
-}
-
-pub fn deserialize_buttons<'de, D: Deserializer<'de>>(
-    deserializer: D,
-) -> StdResult<FixedArray<ActivityButton>, D::Error> {
-    ArrayVec::<_, 2>::deserialize(deserializer).map(|labels| {
-        FixedArray::from_vec_trunc(
-            labels
-                .into_iter()
-                .map(|l| ActivityButton {
-                    label: l,
-                    url: FixedString::default(),
-                })
-                .collect(),
-        )
-    })
-}
-
-/// Used with `#[serde(with = "comma_separated_string")]`
-pub mod comma_separated_string {
-    use serde::{Deserialize, Deserializer, Serializer};
-    use serde_cow::CowStr;
-
-    use crate::internal::prelude::*;
-
-    pub fn deserialize<'de, D: Deserializer<'de>>(
-        deserializer: D,
-    ) -> Result<FixedArray<FixedString>, D::Error> {
-        let str_sequence = CowStr::deserialize(deserializer)?.0;
-        let vec = str_sequence.split(", ").map(FixedString::from_str_trunc).collect();
-
-        Ok(FixedArray::from_vec_trunc(vec))
-    }
-
-    pub fn serialize<S: Serializer>(
-        vec: &FixedArray<FixedString>,
-        serializer: S,
-    ) -> Result<S::Ok, S::Error> {
-        serializer.serialize_str(&join_to_string(", ", vec))
-    }
 }
 
 /// Used with `#[serde(with = "single_recipient")]`
