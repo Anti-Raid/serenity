@@ -54,6 +54,39 @@ pub struct PartialGuild {
     /// [`discord support article`]: https://support.discord.com/hc/en-us/articles/1500005389362-NSFW-Server-Designation
     pub nsfw_level: NsfwLevel,
 
+    /// The guild features. More information available at [`discord documentation`].
+    ///
+    /// The following is a list of known features:
+    /// - `ANIMATED_ICON`
+    /// - `BANNER`
+    /// - `COMMERCE`
+    /// - `COMMUNITY`
+    /// - `DISCOVERABLE`
+    /// - `FEATURABLE`
+    /// - `INVITE_SPLASH`
+    /// - `MEMBER_VERIFICATION_GATE_ENABLED`
+    /// - `MONETIZATION_ENABLED`
+    /// - `MORE_STICKERS`
+    /// - `NEWS`
+    /// - `PARTNERED`
+    /// - `PREVIEW_ENABLED`
+    /// - `PRIVATE_THREADS`
+    /// - `ROLE_ICONS`
+    /// - `SEVEN_DAY_THREAD_ARCHIVE`
+    /// - `THREE_DAY_THREAD_ARCHIVE`
+    /// - `TICKETED_EVENTS_ENABLED`
+    /// - `VANITY_URL`
+    /// - `VERIFIED`
+    /// - `VIP_REGIONS`
+    /// - `WELCOME_SCREEN_ENABLED`
+    /// - `THREE_DAY_THREAD_ARCHIVE`
+    /// - `SEVEN_DAY_THREAD_ARCHIVE`
+    /// - `PRIVATE_THREADS`
+    ///
+    ///
+    /// [`discord documentation`]: https://discord.com/developers/docs/resources/guild#guild-object-guild-features
+    pub features: FixedArray<FixedString>,
+
     #[serde(flatten)]
     pub extra_info: HashMap<String, serde_json::Value>,
 }
