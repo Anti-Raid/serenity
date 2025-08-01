@@ -2,14 +2,12 @@
 //! library.
 
 mod formatted_timestamp;
-mod message_builder;
 
 use std::num::NonZeroU16;
 
 pub use formatted_timestamp::*;
 use url::Url;
 
-pub use self::message_builder::{Content, ContentModifier, EmbedMessageBuilding, MessageBuilder};
 use crate::model::prelude::*;
 
 /// Retrieves the "code" part of an invite out of a URL.

@@ -2405,7 +2405,7 @@ impl Http {
     pub async fn get_audit_logs(
         &self,
         guild_id: GuildId,
-        action_type: Option<audit_log::Action>,
+        action_type: Option<u16>,
         user_id: Option<UserId>,
         before: Option<AuditLogEntryId>,
         limit: Option<NonMaxU8>,
@@ -2413,7 +2413,7 @@ impl Http {
         let (action_type_str, before_str, limit_str, user_id_str);
         let mut params = ArrayVec::<_, 4>::new();
         if let Some(action_type) = action_type {
-            action_type_str = action_type.num().to_arraystring();
+            action_type_str = action_type.to_arraystring();
             params.push(("action_type", action_type_str.as_str()));
         }
         if let Some(before) = before {

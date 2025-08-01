@@ -1,16 +1,12 @@
 //! User information-related models.
 
 use std::fmt;
-#[cfg(feature = "model")]
-use std::fmt::Write;
 use std::num::NonZeroU16;
 use std::ops::{Deref, DerefMut};
 
 use serde::{Deserialize, Serialize};
 
 use super::prelude::*;
-#[cfg(feature = "model")]
-use crate::model::utils::avatar_url;
 
 /// Used with `#[serde(with|deserialize_with|serialize_with)]`
 ///
@@ -312,102 +308,6 @@ bitflags! {
     }
 }
 
-#[cfg(feature = "model")]
-impl User {
-    /// Returns the formatted URL of the user's icon, if one exists.
-    ///
-    /// This will produce a WEBP image URL, or GIF if the user has a GIF avatar.
-    #[must_use]
-    pub fn avatar_url(&self) -> Option<String> {
-        avatar_url(None, self.id, self.avatar.as_ref())
-    }
-
-    /// Returns the formatted URL of the user's banner, if one exists.
-    ///
-    /// This will produce a WEBP image URL, or GIF if the user has a GIF banner.
-    ///
-    /// **Note**: This will only be present if the user is fetched via Rest API, e.g. with
-    /// [`crate::http::Http::get_user`].
-    #[must_use]
-    pub fn banner_url(&self) -> Option<String> {
-        banner_url(self.id, self.banner.as_ref())
-    }
-
-    /// Returns the formatted URL to the user's default avatar URL.
-    ///
-    /// This will produce a PNG URL.
-    #[must_use]
-    pub fn default_avatar_url(&self) -> String {
-        default_avatar_url(self)
-    }
-
-    /// Calculates the user's display name.
-    ///
-    /// The global name takes priority over the user's username if it exists.
-    ///
-    /// Note: Guild specific information is not included as this is only available on the [Member].
-    #[must_use]
-    pub fn display_name(&self) -> &str {
-        self.global_name.as_deref().unwrap_or(&self.name)
-    }
-
-    /// Retrieves the URL to the user's avatar, falling back to the default avatar if needed.
-    ///
-    /// This will call [`Self::avatar_url`] first, and if that returns [`None`], it then falls back
-    /// to [`Self::default_avatar_url`].
-    #[must_use]
-    pub fn face(&self) -> String {
-        self.avatar_url().unwrap_or_else(|| self.default_avatar_url())
-    }
-
-    /// Retrieves the URL to the static version of the user's avatar, falling back to the default
-    /// avatar if needed.
-    ///
-    /// This will call [`Self::static_avatar_url`] first, and if that returns [`None`], it then
-    /// falls back to [`Self::default_avatar_url`].
-    #[must_use]
-    pub fn static_face(&self) -> String {
-        self.static_avatar_url().unwrap_or_else(|| self.default_avatar_url())
-    }
-
-    /// Returns a static formatted URL of the user's icon, if one exists.
-    ///
-    /// This will always produce a WEBP image URL.
-    #[must_use]
-    pub fn static_avatar_url(&self) -> Option<String> {
-        static_avatar_url(self.id, self.avatar.as_ref())
-    }
-
-    /// Returns the "tag" for the user.
-    ///
-    /// The "tag" is defined as "username#discriminator", such as "zeyla#5479".
-    ///
-    /// # Examples
-    ///
-    /// Make a command to tell the user what their tag is:
-    ///
-    /// ```rust,no_run
-    /// # use serenity::prelude::*;
-    /// # use serenity::model::prelude::*;
-    /// # use serenity::http::Http;
-    /// # async fn run() -> Result<(), Box<dyn std::error::Error>> {
-    /// # let http: Http = unimplemented!();
-    /// # let msg: Message = unimplemented!();
-    ///
-    /// if msg.content == "!mytag" {
-    ///     let content = format!("Your tag is: {}", msg.author.tag());
-    ///     let _ = msg.channel_id.say(&http, &content).await;
-    /// }
-    ///
-    /// # Ok(())
-    /// # }
-    /// ```
-    #[must_use]
-    pub fn tag(&self) -> std::borrow::Cow<'_, str> {
-        tag(&self.name, self.discriminator)
-    }
-}
-
 impl fmt::Display for User {
     /// Formats a string which will mention the user.
     // This is in the format of: `<@USER_ID>`
@@ -444,47 +344,6 @@ impl From<&User> for UserId {
     }
 }
 
-#[cfg(feature = "model")]
-fn default_avatar_url(user: &User) -> String {
-    let avatar_id = if let Some(discriminator) = user.discriminator {
-        discriminator.get() % 5 // Legacy username system
-    } else {
-        ((user.id.get() >> 22) % 6) as u16 // New username system
-    };
-
-    cdn!("/embed/avatars/{}.png", avatar_id)
-}
-
-#[cfg(feature = "model")]
-fn static_avatar_url(user_id: UserId, hash: Option<&ImageHash>) -> Option<String> {
-    hash.map(|hash| cdn!("/avatars/{}/{}.webp?size=1024", user_id, hash))
-}
-
-#[cfg(feature = "model")]
-fn banner_url(user_id: UserId, hash: Option<&ImageHash>) -> Option<String> {
-    hash.map(|hash| {
-        let ext = if hash.is_animated() { "gif" } else { "webp" };
-        cdn!("/banners/{}/{}.{}?size=1024", user_id, hash, ext)
-    })
-}
-
-#[cfg(feature = "model")]
-fn tag(name: &str, discriminator: Option<NonZeroU16>) -> std::borrow::Cow<'_, str> {
-    let Some(discriminator) = discriminator else {
-        return std::borrow::Cow::Borrowed(name);
-    };
-
-    // 32: max length of username
-    // 1: `#`
-    // 4: max length of discriminator
-    let mut tag = String::with_capacity(37);
-    tag.push_str(name);
-    tag.push('#');
-    write!(tag, "{discriminator:04}").expect("writing to a string should never fail");
-
-    std::borrow::Cow::Owned(tag)
-}
-
 #[cfg(test)]
 mod test {
     use std::num::NonZeroU16;
@@ -512,65 +371,5 @@ mod test {
             discriminator: None,
         };
         assert_json(&user_no_discriminator, json!({}));
-    }
-
-    #[cfg(feature = "model")]
-    mod model {
-        use std::num::NonZeroU16;
-        use std::str::FromStr;
-
-        use small_fixed_array::FixedString;
-
-        use crate::model::id::UserId;
-        use crate::model::misc::ImageHash;
-        use crate::model::user::User;
-
-        #[test]
-        fn test_core() {
-            let mut user = User {
-                id: UserId::new(210),
-                avatar: Some(ImageHash::from_str("fb211703bcc04ee612c88d494df0272f").unwrap()),
-                discriminator: NonZeroU16::new(1432),
-                name: FixedString::from_static_trunc("test"),
-                ..Default::default()
-            };
-
-            let expected = "/avatars/210/fb211703bcc04ee612c88d494df0272f.webp?size=1024";
-            assert!(user.avatar_url().unwrap().ends_with(expected));
-            assert!(user.static_avatar_url().unwrap().ends_with(expected));
-
-            user.avatar = Some(ImageHash::from_str("a_fb211703bcc04ee612c88d494df0272f").unwrap());
-            let expected = "/avatars/210/a_fb211703bcc04ee612c88d494df0272f.gif?size=1024";
-            assert!(user.avatar_url().unwrap().ends_with(expected));
-            let expected = "/avatars/210/a_fb211703bcc04ee612c88d494df0272f.webp?size=1024";
-            assert!(user.static_avatar_url().unwrap().ends_with(expected));
-
-            user.avatar = None;
-            assert!(user.avatar_url().is_none());
-
-            assert_eq!(user.tag(), "test#1432");
-        }
-
-        #[test]
-        fn default_avatars() {
-            let mut user = User {
-                discriminator: None,
-                id: UserId::new(737323631117598811),
-                ..Default::default()
-            };
-
-            // New username system
-            assert!(user.default_avatar_url().ends_with("5.png"));
-
-            // Legacy username system
-            user.discriminator = NonZeroU16::new(1);
-            assert!(user.default_avatar_url().ends_with("1.png"));
-            user.discriminator = NonZeroU16::new(2);
-            assert!(user.default_avatar_url().ends_with("2.png"));
-            user.discriminator = NonZeroU16::new(3);
-            assert!(user.default_avatar_url().ends_with("3.png"));
-            user.discriminator = NonZeroU16::new(4);
-            assert!(user.default_avatar_url().ends_with("4.png"));
-        }
     }
 }

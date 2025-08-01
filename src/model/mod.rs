@@ -25,7 +25,6 @@ pub(crate) use utils::assert_json;
 pub mod application;
 pub mod channel;
 pub mod colour;
-pub mod connection;
 pub mod error;
 pub mod event;
 pub mod gateway;
@@ -68,7 +67,6 @@ pub mod prelude {
     #[doc(hidden)]
     pub use super::guild::automod::{
         Action,
-        ActionExecution,
         ActionType,
         AutoModRule,
         KeywordPresetType,
@@ -83,10 +81,8 @@ pub mod prelude {
         application::*,
         channel::*,
         colour::*,
-        connection::*,
         event::*,
         gateway::*,
-        guild::audit_log::*,
         guild::*,
         id::*,
         invite::*,

@@ -1,54 +1,11 @@
 use std::cmp::Ordering;
 use std::fmt::{self, Write as _};
-use std::str::FromStr;
 
 #[cfg(feature = "http")]
 use percent_encoding::{NON_ALPHANUMERIC, utf8_percent_encode};
 use serde::de::Error as DeError;
 use serde::ser::{Serialize, SerializeMap, Serializer};
 use crate::model::prelude::*;
-use crate::model::utils::discord_colours_opt;
-
-/// An emoji reaction to a message.
-///
-/// [Discord docs](https://discord.com/developers/docs/topics/gateway#message-reaction-add-message-reaction-add-event-fields).
-
-#[derive(Clone, Debug, Deserialize, Serialize)]
-#[serde(remote = "Self")]
-#[non_exhaustive]
-pub struct Reaction {
-    /// The Id of the [`User`] that sent the reaction.
-    ///
-    /// Always present when received from gateway.
-    /// Set to [`None`] by [`Message::react`] when cache is not available.
-    pub user_id: Option<UserId>,
-    /// The [`Channel`] of the associated [`Message`].
-    pub channel_id: GenericChannelId,
-    /// The Id of the [`Message`] that was reacted to.
-    pub message_id: MessageId,
-    /// The optional Id of the [`Guild`] where the reaction was sent.
-    pub guild_id: Option<GuildId>,
-    /// The optional object of the member which added the reaction.
-    ///
-    /// Not present on the ReactionRemove gateway event.
-    pub member: Option<Member>,
-    /// The reactive emoji used.
-    pub emoji: ReactionType,
-    /// The Id of the user who sent the message which this reacted to.
-    ///
-    /// Only present on the ReactionAdd gateway event.
-    pub message_author_id: Option<UserId>,
-    /// Indicates if this was a super reaction.
-    pub burst: bool,
-    /// Colours used for the super reaction animation.
-    ///
-    /// Only present on the ReactionAdd gateway event.
-    #[serde(rename = "burst_colors", default, deserialize_with = "discord_colours_opt")]
-    pub burst_colours: Option<Vec<Colour>>,
-    /// The type of reaction.
-    #[serde(rename = "type")]
-    pub reaction_type: ReactionTypes,
-}
 
 enum_number! {
     /// A list of types a reaction can be.
@@ -59,23 +16,6 @@ enum_number! {
         Normal = 0,
         Burst = 1,
         _ => Unknown(u8),
-    }
-}
-
-// Manual impl needed to insert guild_id into PartialMember
-impl<'de> Deserialize<'de> for Reaction {
-    fn deserialize<D: Deserializer<'de>>(deserializer: D) -> StdResult<Self, D::Error> {
-        let mut reaction = Self::deserialize(deserializer)?; // calls #[serde(remote)]-generated inherent method
-        if let (Some(guild_id), Some(member)) = (reaction.guild_id, reaction.member.as_mut()) {
-            member.guild_id = guild_id;
-        }
-        Ok(reaction)
-    }
-}
-
-impl Serialize for Reaction {
-    fn serialize<S: serde::Serializer>(&self, serializer: S) -> StdResult<S::Ok, S::Error> {
-        Self::serialize(self, serializer) // calls #[serde(remote)]-generated inherent method
     }
 }
 
@@ -225,16 +165,6 @@ impl From<char> for ReactionType {
     }
 }
 
-impl From<Emoji> for ReactionType {
-    fn from(emoji: Emoji) -> ReactionType {
-        ReactionType::Custom {
-            animated: emoji.animated(),
-            id: emoji.id,
-            name: Some(emoji.name),
-        }
-    }
-}
-
 impl From<EmojiId> for ReactionType {
     fn from(emoji_id: EmojiId) -> ReactionType {
         ReactionType::Custom {
@@ -265,100 +195,6 @@ impl fmt::Display for ReactionConversionError {
 }
 
 impl std::error::Error for ReactionConversionError {}
-
-impl TryFrom<String> for ReactionType {
-    type Error = ReactionConversionError;
-
-    fn try_from(emoji_string: String) -> std::result::Result<Self, Self::Error> {
-        if emoji_string.is_empty() {
-            return Err(ReactionConversionError);
-        }
-
-        if !emoji_string.starts_with('<') {
-            return Ok(ReactionType::Unicode(emoji_string.trunc_into()));
-        }
-        ReactionType::try_from(&emoji_string[..])
-    }
-}
-
-impl TryFrom<&str> for ReactionType {
-    /// Creates a [`ReactionType`] from a string slice.
-    ///
-    /// # Examples
-    ///
-    /// Creating a [`ReactionType`] from a `🍎`, modeling a similar API as the rest of the library:
-    ///
-    /// ```rust
-    /// use std::convert::TryInto;
-    /// use std::fmt::Debug;
-    ///
-    /// use serenity::model::channel::ReactionType;
-    ///
-    /// fn foo<R: TryInto<ReactionType>>(bar: R)
-    /// where
-    ///     R::Error: Debug,
-    /// {
-    ///     println!("{:?}", bar.try_into().unwrap());
-    /// }
-    ///
-    /// foo("🍎");
-    /// ```
-    ///
-    /// Creating a [`ReactionType`] from a custom emoji argument in the following format:
-    ///
-    /// ```rust
-    /// use serenity::model::channel::ReactionType;
-    /// use serenity::model::id::EmojiId;
-    /// use serenity::small_fixed_array::FixedString;
-    ///
-    /// let emoji_string = "<:customemoji:600404340292059257>";
-    /// let reaction = ReactionType::try_from(emoji_string).unwrap();
-    /// let reaction2 = ReactionType::Custom {
-    ///     animated: false,
-    ///     id: EmojiId::new(600404340292059257),
-    ///     name: Some(FixedString::from_static_trunc("customemoji")),
-    /// };
-    ///
-    /// assert_eq!(reaction, reaction2);
-    /// ```
-    type Error = ReactionConversionError;
-
-    fn try_from(emoji_str: &str) -> std::result::Result<Self, Self::Error> {
-        if emoji_str.is_empty() {
-            return Err(ReactionConversionError);
-        }
-
-        if !emoji_str.starts_with('<') {
-            return Ok(ReactionType::Unicode(emoji_str.to_string().trunc_into()));
-        }
-
-        if !emoji_str.ends_with('>') {
-            return Err(ReactionConversionError);
-        }
-
-        let emoji_str = emoji_str.trim_matches(&['<', '>'] as &[char]);
-
-        let mut split_iter = emoji_str.split(':');
-
-        let animated = split_iter.next().ok_or(ReactionConversionError)? == "a";
-        let name = Some(split_iter.next().ok_or(ReactionConversionError)?.to_string().trunc_into());
-        let id = split_iter.next().and_then(|s| s.parse().ok()).ok_or(ReactionConversionError)?;
-
-        Ok(ReactionType::Custom {
-            animated,
-            id,
-            name,
-        })
-    }
-}
-
-impl FromStr for ReactionType {
-    type Err = ReactionConversionError;
-
-    fn from_str(s: &str) -> std::result::Result<Self, Self::Err> {
-        ReactionType::try_from(s)
-    }
-}
 
 impl fmt::Display for ReactionType {
     /// Formats the reaction type, displaying the associated emoji in a way that clients can

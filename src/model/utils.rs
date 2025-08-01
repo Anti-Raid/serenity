@@ -1,37 +1,14 @@
 use std::fmt;
 
 use arrayvec::ArrayVec;
-use serde::de::Error as DeError;
-use serde_cow::CowStr;
 use small_fixed_array::FixedString;
 
 use super::prelude::*;
-
-pub fn default_true() -> bool {
-    true
-}
 
 /// Helper function for `#[serde(skip_serializing_if = "is_false")]`
 #[expect(clippy::trivially_copy_pass_by_ref)]
 pub fn is_false(v: &bool) -> bool {
     !v
-}
-
-#[cfg(feature = "model")]
-pub(super) fn avatar_url(
-    guild_id: Option<GuildId>,
-    user_id: UserId,
-    hash: Option<&ImageHash>,
-) -> Option<String> {
-    hash.map(|hash| {
-        let ext = if hash.is_animated() { "gif" } else { "webp" };
-
-        if let Some(guild_id) = guild_id {
-            cdn!("/guilds/{}/users/{}/avatars/{}.{}?size=1024", guild_id, user_id, hash, ext)
-        } else {
-            cdn!("/avatars/{}/{}.{}?size=1024", user_id, hash, ext)
-        }
-    })
 }
 
 #[cfg(feature = "model")]
@@ -55,14 +32,6 @@ impl StrOrInt<'_> {
             StrOrInt::String(val) => val.parse(),
             StrOrInt::Str(val) => val.parse(),
             StrOrInt::Int(val) => Ok(*val),
-        }
-    }
-
-    pub fn into_enum<T>(self, string: fn(FixedString) -> T, int: fn(u64) -> T) -> T {
-        match self {
-            Self::Int(val) => int(val),
-            Self::String(val) => string(FixedString::from_string_trunc(val)),
-            Self::Str(val) => string(FixedString::from_str_trunc(val)),
         }
     }
 }
@@ -193,39 +162,4 @@ pub mod single_recipient {
 
         seq.end()
     }
-}
-
-pub fn discord_colours_opt<'de, D>(deserializer: D) -> Result<Option<Vec<Colour>>, D::Error>
-where
-    D: Deserializer<'de>,
-{
-    let vec_str: Option<Vec<CowStr<'_>>> = Deserialize::deserialize(deserializer)?;
-
-    let Some(vec_str) = vec_str else { return Ok(None) };
-
-    if vec_str.is_empty() {
-        return Ok(None);
-    }
-
-    deserialize_colours::<D>(vec_str).map(Some)
-}
-
-fn deserialize_colours<'de, D>(vec_str: Vec<CowStr<'_>>) -> Result<Vec<Colour>, D::Error>
-where
-    D: Deserializer<'de>,
-{
-    vec_str
-        .into_iter()
-        .map(|s| {
-            let s = s.0.strip_prefix('#').ok_or_else(|| DeError::custom("Invalid colour data"))?;
-
-            if s.len() != 6 {
-                return Err(DeError::custom("Invalid colour data length"));
-            }
-
-            u32::from_str_radix(s, 16)
-                .map(Colour::new)
-                .map_err(|_| DeError::custom("Invalid colour data"))
-        })
-        .collect()
 }

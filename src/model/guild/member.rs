@@ -1,7 +1,5 @@
 use std::fmt;
 use crate::model::prelude::*;
-#[cfg(feature = "model")]
-use crate::model::utils::avatar_url;
 
 /// Information about a member of a guild.
 ///
@@ -82,46 +80,6 @@ bitflags! {
         const AUTOMOD_QUARANTINED_USERNAME = 1 << 7;
         /// Member has dismissed the DM settings upsell. Not editable
         const DM_SETTINGS_UPSELL_ACKNOWLEDGED = 1 << 9;
-    }
-}
-
-#[cfg(feature = "model")]
-impl Member {
-    /// Calculates the member's display name.
-    ///
-    /// The nickname takes priority over the member's username if it exists.
-    #[must_use]
-    pub fn display_name(&self) -> &str {
-        self.nick.as_ref().or(self.user.global_name.as_ref()).unwrap_or(&self.user.name)
-    }
-
-    /// Returns the DiscordTag of a Member, taking possible nickname into account.
-    #[must_use]
-    #[deprecated = "Use User::tag to get the correct Discord username format or Self::display_name for the name that users will see."]
-    pub fn distinct(&self) -> String {
-        if let Some(discriminator) = self.user.discriminator {
-            format!("{}#{:04}", self.display_name(), discriminator.get())
-        } else {
-            self.display_name().to_string()
-        }
-    }
-
-    /// Returns the formatted URL of the member's per guild avatar, if one exists.
-    ///
-    /// This will produce a WEBP image URL, or GIF if the member has a GIF avatar.
-    #[must_use]
-    pub fn avatar_url(&self) -> Option<String> {
-        avatar_url(Some(self.guild_id), self.user.id, self.avatar.as_ref())
-    }
-
-    /// Retrieves the URL to the current member's avatar, falling back to the user's avatar, then
-    /// default avatar if needed.
-    ///
-    /// This will call [`Self::avatar_url`] first, and if that returns [`None`], it then falls back
-    /// to [`User::face()`].
-    #[must_use]
-    pub fn face(&self) -> String {
-        self.avatar_url().unwrap_or_else(|| self.user.face())
     }
 }
 
