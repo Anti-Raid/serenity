@@ -86,6 +86,8 @@ pub struct PartialGuild {
     ///
     /// [`discord documentation`]: https://discord.com/developers/docs/resources/guild#guild-object-guild-features
     pub features: FixedArray<FixedString>,
+    /// Icon hash
+    pub icon: Option<String>,
 
     #[serde(flatten)]
     pub extra_info: HashMap<String, serde_json::Value>,
@@ -93,6 +95,16 @@ pub struct PartialGuild {
 
 #[cfg(feature = "model")]
 impl PartialGuild {
+    /// Returns the guild's icon URL.
+    pub fn icon_url(&self) -> Option<String> {
+        self.icon.as_ref().map(|hash| {
+            format!(
+                "https://cdn.discordapp.com/icons/{}/{}.jpg?size=1024",
+                self.id, hash
+            )
+        })
+    }
+
     /// Calculate a [`Member`]'s permissions in the guild.
     ///
     /// You likely want to use PartialGuild::user_permissions_in instead as this function does not
