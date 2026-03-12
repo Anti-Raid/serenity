@@ -89,8 +89,6 @@ pub mod attachments;
 pub mod constants;
 pub mod model;
 pub mod prelude;
-#[cfg(feature = "gateway")]
-pub mod gateway;
 #[cfg(feature = "http")]
 pub mod http;
 pub mod secrets;
@@ -98,8 +96,6 @@ pub mod secrets;
 mod error;
 
 pub use crate::error::{Error, Result};
-#[cfg(feature = "gateway")]
-pub use crate::gateway::client::Client;
 
 /// Special module that re-exports most public items from this crate.
 ///
@@ -108,9 +104,6 @@ pub mod all {
     #[doc(no_inline)]
     pub use crate::constants::*;
     pub use attachments::CreateAttachment;
-    #[cfg(feature = "gateway")]
-    #[doc(no_inline)]
-    pub use crate::gateway::{client::*, *};
     #[cfg(feature = "http")]
     #[doc(no_inline)]
     pub use crate::http::*;
@@ -125,7 +118,6 @@ pub mod all {
         model::prelude::*,
         *,
     };
-    pub use crate::model::event::IEvent; // Re-export the IEvent struct for convenience
 }
 
 // Re-exports of crates used internally which are already publically exposed.
